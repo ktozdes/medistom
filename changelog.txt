@@ -1,0 +1,140 @@
+==============================
+VER 3.5.4 (December 18th 2013)
+==============================
+-- New Feature: New Appointment Status (26th Feb 2014)
+-- New Feature: User Registration Enable Disable (3rd Feb 2014)
+-- New Feature: Client User profile on booking (18th Jan 2014)
+-- New Feature: Booking using existing user profile through email (18th Jan 2014)
+-- New Feature: Client booking management dashboard (18th Jan 2014)
+
+-- New Feature: Coupon Code (December 18th 2013)
+-- Bug Fixed: Hardcore currency code (December 25th 2013)
+
+
+
+==============================
+VER 3.5.3 (November 11th 2013)
+==============================
+-- New Feature: Staff notifications and enable/disable option setting for staff notification
+-- New Feature: Booking instructions
+-- Bug Fixed: Notification message typos fixed 'saveing' 'appoointment'
+-- Bug Fixed: Show logged in staff appointments only in staff admin dashboard
+-- Bug Fixed: Weekly reurring appointments (same day filter)
+-- Bug Fixed: Reminder message body variable corrected
+-- Bug Fixed: Paypal class object declaration corrected
+
+
+==============================
+VER 3.5.2 (October 18th 2013)
+==============================
+-- New Feature: Export appointments & clients
+-- New Feature: Show or hide  service cost and duration
+-- Improvement: Staff Calendar with manage appointments page
+-- Improvement: Iconic Interface
+-- Bug Fixed: Strip special charcter at client form submission
+-- Bug Fixed: Client pagination
+
+
+==============================
+VER 3.5.1 (September 3rd 2013)
+==============================
+-- Improvement: Default service category rename option
+-- Improvement: Default staff group rename option
+-- Improvement: Service listing with Category
+-- Improvement: Date field design
+-- Improvement: Post content and shortcode content hierarchy maintained
+-- Bug Fixed: Plugin and directory basename dynamic
+-- Bug Fixed: Button & Mobile shortcode text 
+-- Bug Fixed: Loading icon url dynamic
+-- Bug Fixed: Meassage on business close, staff business close, all staff appointments booked changed to correctly
+
+
+=========
+VER 3.5
+=========
+-- Improvement: Big background calendar included in transaltion file
+-- Bug Fixed: Typos
+
+
+=========
+VER 3.4
+=========
+-- New Feature: 2 Way Google Sync
+-- New Feature: Email Reminder
+-- New Feature: Capacity booking (On approved appointment)
+-- Bug Fixed: Date-picker position fixed
+
+=========
+VER 3.3
+=========
+-- New Feature: Fullcalendar language changable
+-- Bug Fixed: Safari & IE compltible date function
+-- Bug FIxed: Fullcalendar title with single quote 
+
+
+=========
+VER 3.2.1
+=========
+
+28th January
+--Typo Fixed: Spells on all model windows
+
+15th January
+-- New Feature: Get seleted date in booking form
+
+12th January 
+-- Bug Fixed: TimeOff time camprision on create & update
+-- Bug Fixed: Appointment time camprision on update
+
+9th January 
+-- New Feature: Global Time & Date Format Settings
+
+
+
+=========
+VER 3.2
+=========
+
+8th January 
+-- Improvement: Close icon position on all model form fixed
+
+14th Dec. 2012
+
+-- Bug Fixed: Time-Off previous time logic
+-- Bug Fixed: All types of recurring appointment previous time logic
+
+06th Dec. 2012
+
+-- New Feature: Staff hours
+-- New Feature: Staff Level Time Off
+-- New Feature: Bi-Weekly Time-Off
+
+29th Nov. 2012
+
+-- Bug Fixed: jquery confilict JQuery word replaced in all file's js code
+-- Bug Fixed: 'Staff_id' field updated to 'text' in 'ap_Service' table
+-- Bug Fixed: Staff details view
+-- Bug Fixed: jquery confilict JQuery word replaced in all file's js code
+-- Bug Fixed: 'Staff_id' field updated to 'text' in 'ap_Service' table
+-- Bug Fixed: Staff details view
+
+
+
+
+
+Ver 3.1
+=======
+-- New Feature: Client search 
+-- New Feature: Client history
+-- New Feature: currency settings applied
+-- New Feature: customize booking button text
+-- Bug Fixed: notify client options name updated
+-- Bug Fixed: jquery confilict JQuery word replaced in js code
+-- Bug Fixed: free up cancelled appointment slot
+
+
+Ver 3.0
+=======
+-- New Feature: Google Calendar Sync
+
+
