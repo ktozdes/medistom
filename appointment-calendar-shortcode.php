@@ -1859,6 +1859,8 @@ function appointment_calendar_shortcode() {
         if($Action == "CheckExistingUser") {
             ?><div id="check-email-result"><?php
             $ClientEmail = $_POST['ClientEmail'];
+			blabla 
+			lsjflsdkjflk
             $ClientId = email_exists( $ClientEmail );
             if( $ClientId = email_exists( $ClientEmail )) {
                 //fetch user details
