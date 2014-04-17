@@ -237,6 +237,7 @@ $AppointmentsTable_sql = "CREATE TABLE IF NOT EXISTS `$AppointmentsTableName` (
   `email` varchar(256) NOT NULL,
   `service_id` int(11) NOT NULL,
   `staff_id` int(11) NOT NULL,
+  `cabinet_id` int(11) NOT NULL,
   `phone` bigint(20) NOT NULL,
   `start_time` varchar(10) NOT NULL,
   `end_time` varchar(10) NOT NULL,
@@ -424,6 +425,22 @@ $ClientsQuesionaryRelTable_sql = "CREATE TABLE IF NOT EXISTS `$ClientQuesionaryR
   `value` varchar( 128 ) NOT NULL
 )DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
 $wpdb->query($ClientsQuesionaryRelTable_sql);
+
+$CabinetTableName = $wpdb->prefix . "ap_cabinets";
+$CabinetTable_sql = "CREATE TABLE IF NOT EXISTS `$CabinetTableName` (
+  `cabinet_id` int( 11 ) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `cabinet_name` varchar( 64 ) NOT NULL ,
+  `cabinet_note` varchar( 512 ) NOT NULL
+)DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
+$wpdb->query($CabinetTable_sql);
+
+$CabinetStaffTableName = $wpdb->prefix . "ap_cabinets_staff";
+$CabinetStaffTable_sql = "CREATE TABLE IF NOT EXISTS `$CabinetStaffTableName` (
+  `id` int( 11 ) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `cabinet_id` int( 11 ) NOT NULL ,
+  `staff_id` int( 11 ) NOT NULL
+)DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
+$wpdb->query($CabinetStaffTable_sql);
 
 //9. create staff table
 $StaffTableName = $wpdb->prefix . "ap_staff";
