@@ -98,13 +98,12 @@
 				}
 			}
 			$groupList = $wpdb->get_results("
-			SELECT $table_question.question, $table_question.type, $table_question.group,question_id, $table_question_user.value FROM $table_user
-				LEFT JOIN $table_question_user on $table_question_user.client_id = $table_user.id
-				LEFT JOIN $table_question on $table_question_user.question_id = $table_question.id
-			WHERE
-				$table_user.id = $updateclient
-			order by `group`",ARRAY_A);
+			SELECT question, type, $table_question.id 'question_id', client_id, value, `group` FROM $table_question
+            LEFT JOIN $table_question_user on $table_question_user.question_id = $table_question.id
+            AND client_id = $updateclient ORDER BY `group`
+			",ARRAY_A);
 		}
+        //echo $wpdb->last_query;
 		$currentGroup = '';
 		foreach($groupList as $singleQuestion):?>
 		<?php if($currentGroup!=$singleQuestion['group']):?>
@@ -115,7 +114,7 @@
 			<tr>
 				<th width="15%"><?php echo $singleQuestion['question'];?></th>
 				<td><?php if ($singleQuestion['type']=='date'):?>
-					<input type="text" class="datepicker" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>" class="date"/>
+					<input type="text" class="datepicker date" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>" />
 				<?php elseif($singleQuestion['type']=='text'):?>
 					<input type="text" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>" class="numeric"/>
 				<?php elseif($singleQuestion['type']=='bit'):?>
@@ -566,25 +565,39 @@
 		);
 		//echo '<br/>'.$wpdb->last_query;
 		if($result!==false) {
+            print_r($_POST['question_id']);
 			foreach($_POST['question_id'] as $key=>$value){
 				$table_question_user = $wpdb->prefix . "ap_clients_questions_relationship";
-				$wpdb->update( 
-					$table_question_user, 
-					array(
-						'value' => $value
-					),
-					array(
-						'client_id' => $client_up_id, 
-						'question_id' => $key, 
-					)
-				);
+                $wpdb->get_row("SELECT * FROM $table_question_user WHERE client_id= $client_up_id and question_id =$key ");
+                if ($wpdb->num_rows>0){
+                    $wpdb->update(
+                        $table_question_user,
+                        array(
+                            'value' => $value
+                        ),
+                        array(
+                            'client_id' => $client_up_id,
+                            'question_id' => $key,
+                        )
+                    );
+                }
+                else{
+                    $wpdb->insert(
+                        $table_question_user,
+                        array(
+                            'client_id' => $client_up_id,
+                            'question_id' => $key,
+                            'value' => $value
+                        )
+                    );
+                }
 				
 			}
-			echo "<script>alert('".__('Client details successfully updated.','appointzilla')."');</script>";
-			echo "<script>location.href='?page=client-manage&viewid=$client_up_id';</script>";
+			//echo "<script>alert('".__('Client details successfully updated.','appointzilla')."');</script>";
+			//echo "<script>location.href='?page=client-manage&viewid=$client_up_id';</script>";
 		} else {
-			echo "<script>alert('".__('Client details was not updated.','appointzilla')."');</script>";
-			echo "<script>location.href='?page=client-manage&viewid=$client_up_id';</script>";
+			//echo "<script>alert('".__('Client details was not updated.','appointzilla')."');</script>";
+			//echo "<script>location.href='?page=client-manage&viewid=$client_up_id';</script>";
 		}
     } 
 	// Add new question
@@ -616,8 +629,6 @@
 		}
     }
 	?>
-
-    <style type="text/css"> .error{  color:#FF0000; } </style>
     <script type="text/javascript">
     jQuery(document).ready(function () {
 		$.datepicker.setDefaults( {dateFormat:"dd/mm/yy"} );

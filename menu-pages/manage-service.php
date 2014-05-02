@@ -139,6 +139,123 @@
             </table>
         </form><?php
     }
+	
+	if(isset($_GET['cid'])) {
+        $sid = $_GET['cid'];
+        $cabinetsTable  = $wpdb->prefix . "ap_cabinets";
+		$staffTable 	= $wpdb->prefix . "ap_staff";
+		$cabinetsStaffTable 	= $wpdb->prefix . "ap_cabinets_staff";
+		$cabinets = $wpdb->get_results("select `$cabinetsTable`.`cabinet_id`, cabinet_name, cabinet_note,`$staffTable`.`name` as 'staff_name',`$cabinetsStaffTable`.`staff_id` as 'staff_id'  from `$cabinetsTable`
+			LEFT JOIN `$cabinetsStaffTable` on `$cabinetsTable`.`cabinet_id` = `$cabinetsStaffTable`.`cabinet_id`
+			LEFT JOIN `$staffTable` on `$cabinetsStaffTable`.`staff_id` = `$staffTable`.`id`
+			WHERE `$cabinetsTable`.`cabinet_id` = '$sid'
+			ORDER BY `$cabinetsTable`.`cabinet_id`
+		", ARRAY_A);
+		$selectedStaff = array();
+		$cabinet = array();
+		foreach($cabinets as $single_cabinet){
+			$cabinet = $single_cabinet;
+			$selectedStaff[] = $single_cabinet[staff_id];
+		}?>
+        <form action="" method="post" name="manageservice">
+            <table width="100%" class="table" >
+                <tr>
+                    <th width="20%" scope="row"><?php _e('Name','appointzilla'); ?></th>
+                    <td width="3%"><strong>:</strong></td>
+                    <td width="77%">
+						<input name="cabinet_id" type="hidden" id="cabinet_id"  value="<?php echo $cabinet[cabinet_id]; ?>"/>
+						<input name="cabinet_name" type="text" id="cabinet_name"  value="<?php echo $cabinet[cabinet_name]; ?>"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Cabinet Name','appointzilla');?>"><i class="icon-question-sign"></i></a></td>
+                </tr>
+                <tr>
+                    <th scope="row"><strong><?php _e('Note','appointzilla');?></strong></th>
+                    <td><strong>:</strong></td>
+                    <td width="77%"><input name="cabinet_note" type="text" id="cabinet_note"  value="<?php echo $cabinet[cabinet_note]; ?>"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Cabinet Description','appointzilla');?>"><i class="icon-question-sign"></i></a></td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php _e('Assign Staff(s)','appointzilla');?></th>
+                    <td><strong>:</strong></td>
+                    <td>
+                        <label><?php _e('Use CTRL to Select Multiple Staff(s)','appointzilla');?></label>
+                        <select id="staff" name="staff[]" multiple="multiple" size="7" style="width:300px;">
+                            <?php
+                                $StaffTableName = $wpdb->prefix . "ap_staff";
+                                $AllStaff = $wpdb->get_results("SELECT `id`, `name` FROM `$StaffTableName`", ARRAY_A);
+                                foreach($AllStaff as $Staff)
+                                {
+									if( in_array($Staff[id], $selectedStaff) )  { $selected = "Selected"; } else { $selected = ""; }
+                                    echo "<option value='$Staff[id]' $selected >".ucwords($Staff[name])."</option>";
+                                }
+                            ?>
+                        </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Assign Staff(s) To This Cabinet<br>Use CTRL To Select Multiple Staffs','appointzilla');?>" ><i class="icon-question-sign"></i></a>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">&nbsp;</th>
+                    <td>&nbsp;</td>
+                    <td>
+                        <button id="updatecabinet" type="submit" class="btn" name="updatecabinet"><i class="icon-pencil"></i> <?php _e('Update','appointzilla');?></button>
+                        <a href="?page=service" class="btn"><i class="icon-remove"></i> <?php _e('Cancel','appointzilla');?></a>
+                    </td>
+                </tr>
+            </table>
+        </form><?php
+    }
+	if(isset($_GET['sid']) || isset($_GET['gid'])) {
+        if(isset($_GET['gid'])) $sid = -1; else $sid = $_GET['sid'];
+        $ServiceTableName = $wpdb->prefix . "ap_services";
+        $servicedetails = $wpdb->get_row("SELECT * FROM `$ServiceTableName` WHERE `id` ='$sid'" ,OBJECT);
+        if($servicedetails) { $AllStaffIds = unserialize($servicedetails->staff_id); } ?>
+        <form action="" method="post" name="manageservice">
+            <table width="100%" class="table" >
+                <tr>
+                    <th width="20%" scope="row"><?php _e('Name','appointzilla'); ?></th>
+                    <td width="3%"><strong>:</strong></td>
+                    <td width="77%"><input name="name" type="text" id="name"  value="<?php if($servicedetails) echo $servicedetails->name; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Name','appointzilla');?>"><i class="icon-question-sign"></i></a></td>
+                </tr>
+				<tr>
+                    <th scope="row"><strong><?php _e('Availability','appointzilla');?></strong></th>
+                    <td><strong>:</strong></td>
+                    <td>
+                        <select id="availability" name="availability">
+                            <option value="0"><?php _e('Select Service Availability','appointzilla');?></option>
+                            <option value="yes" <?php if($servicedetails){ if($servicedetails->availability == 'yes') echo "selected"; } ?> ><?php _e('Yes','appointzilla');?></option>
+                            <option value="no" <?php if($servicedetails){ if($servicedetails->availability == 'no') echo "selected"; } ?> ><?php _e('No','appointzilla');?></option>
+                        </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Availability','appointzilla');?>"><i class="icon-question-sign"></i></a>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php _e('Assign Staff(s)','appointzilla');?></th>
+                    <td><strong>:</strong></td>
+                    <td>
+                        <label><?php _e('Use CTRL to Select Multiple Staff(s)','appointzilla');?></label>
+                        <select id="staff" name="staff[]" multiple="multiple" size="7" style="width:300px;">
+                            <?php
+                                $StaffTableName = $wpdb->prefix . "ap_staff";
+                                $AllStaff = $wpdb->get_results("SELECT `id`, `name` FROM `$StaffTableName`", OBJECT);
+                                foreach($AllStaff as $Staff)
+                                {
+                                    if( in_array($Staff->id, $AllStaffIds) )  { $selected = "Selected"; } else { $selected = ""; }
+                                    echo "<option value='$Staff->id' $selected >".ucwords($Staff->name)."</option>";
+                                }
+                            ?>
+                        </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Assign Staff(s) To This Service<br>Use CTRL To Select Multiple Staffs','appointzilla');?>" ><i class="icon-question-sign"></i></a>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">&nbsp;</th>
+                    <td>&nbsp;</td>
+                    <td>
+                        <?php if(isset($_GET['sid']))	{	?>
+                        <button id="saveservice" type="submit" class="btn" name="updateservice"><i class="icon-pencil"></i> <?php _e('Update','appointzilla');?></button>
+                        <?php } else {?>
+                        <button id="saveservice" type="submit" class="btn" name="saveservice"><i class="icon-ok"></i> <?php _e('Create','appointzilla');?></button>
+                        <?php } ?>
+                        <a href="?page=service" class="btn"><i class="icon-remove"></i> <?php _e('Cancel','appointzilla');?></a>
+                    </td>
+                </tr>
+            </table>
+        </form><?php
+    }
 
     //service views
     if(isset($_GET['viewid'])) {
@@ -304,6 +421,39 @@
         } else {
             echo "<script>alert('".__('Service updated successfully.','appointzilla')."')</script>";
             echo "<script>location.href='?page=manage-service&viewid=$sid';</script>";
+        }
+    }
+	//updating cabinet
+	if(isset($_POST['updatecabinet'])) {
+        $cabinetTable = $wpdb->prefix . "ap_cabinets";
+		$result = $wpdb->update( 
+			$cabinetTable, 
+			array(
+				'cabinet_name' => $_POST['cabinet_name'],
+				'cabinet_note' => $_POST['cabinet_note']
+			),
+			array(
+				'cabinet_id' => $_POST['cabinet_id']
+			)
+		);
+		echo $wpdb->last_query;
+		if($result!==false) {
+			$cabinetStaffTable = $wpdb->prefix . "ap_cabinets_staff";
+			$wpdb->delete( $cabinetStaffTable, array( 'cabinet_id' => $_POST['cabinet_id'] ) );
+			foreach($_POST[staff] as $staff_id){
+				$result = $wpdb->insert(
+					$cabinetStaffTable, 
+					array(
+						'cabinet_id' => $_POST['cabinet_id'],
+						'staff_id' => $staff_id
+					)
+				);
+			}
+			echo "<script>alert('".__('Cabinet updated successfully.','appointzilla')."')</script>";
+            echo "<script>location.href='?page=manage-service&cid=$_POST[cabinet_id]';</script>";
+		} else {
+            echo "<script>alert('".__('Cabinet was not updated.','appointzilla')."')</script>";
+            echo "<script>location.href='?page=manage-service&cid=$_POST[cabinet_id]';</script>";
         }
     } ?>
     <style type="text/css">

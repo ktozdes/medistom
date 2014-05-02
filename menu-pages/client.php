@@ -62,7 +62,7 @@
                     <th><?php _e('Name','appointzilla'); ?></th>
                     <th><?php _e('Email','appointzilla'); ?></th>
                     <th><?php _e('Phone','appointzilla'); ?></th>
-                    <th><?php _e('Special Note','appointzilla'); ?></th>
+                    <th><?php _e('Medical Cart','appointzilla'); ?></th>
                     <th><?php _e('Appointment History','appointzilla'); ?></th>
                     <th><?php _e('Action','appointzilla'); ?> </th>
                     <th><a href="#" rel="tooltip" title="<?php _e('Select All','appointzilla'); ?>" ><input type="checkbox" id="checkbox" name="checkbox[]" value="0" /></a></th>
@@ -75,7 +75,10 @@
                 <td><em><?php echo ucwords($client->name); ?></em></td>
                 <td><em><?php echo strtolower($client->email); ?></em></td>
                 <td><em><?php echo $client->phone; ?></em></td>
-                <td><em><?php echo ucfirst($client->note); ?></em></td>
+                <td><em><?php
+
+                ?>
+                <a data-placement="right" href="?page=medical_cart&client_id=<?php echo $client->id; ?>" title="<?php _e('View','appointzilla'); ?>" rel="tooltip"  class="btn btn-success"><i class="icon-book icon-white"></i> <?php _e('View','appointzilla'); ?> </a></em></td>
                 <td><?php $findapp = $client->email;
                     $appointment_table_name= $wpdb->prefix . "ap_appointments";
                     $toat_app_query = "SELECT * FROM `$appointment_table_name` WHERE `email` = '$findapp';";

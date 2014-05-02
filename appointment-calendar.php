@@ -20,7 +20,7 @@ function InstallScript() {
 add_action('plugins_loaded', 'LoadPluginLanguage');
  
 function LoadPluginLanguage() {
- load_plugin_textdomain('appointzilla', FALSE, dirname( plugin_basename(__FILE__)).'/languages/' );
+    load_plugin_textdomain('appointzilla', FALSE, dirname( plugin_basename(__FILE__)).'/languages/' );
 }
 
 // Admin dashboard Menu Pages For Booking Calendar Plugin
@@ -59,6 +59,7 @@ function appointment_calendar_menu() {
     // Client Page
     $SubMenu11 = add_submenu_page( 'appointment-calendar', __('Clients', 'appointzilla'), __('Clients', 'appointzilla'), 'administrator', 'client', 'display_client_page' );
     $SubMenu12 = add_submenu_page( '', 'Client Manage', '','administrator', 'client-manage', 'display_manage_client_page' );
+    $SubMenu25 = add_submenu_page( 'appointment-calendar', 'Medical Cart Manage', 'Medical Cart','administrator', 'medical_cart', 'display_medical_cart_page' );
 
     // Manage Appointment Page
     $SubMenu13 = add_submenu_page( 'appointment-calendar', __('Admin Appointments', 'appointzilla'), __('Appointments', 'appointzilla'), 'administrator', 'manage-appointments', 'display_manage_appointment_page' );
@@ -129,32 +130,35 @@ function appointment_calendar_menu() {
     add_action( 'admin_print_styles-' . $SubMenu23, 'other_pages_css_js' );
     //client update appointment
     add_action( 'admin_print_styles-' . $SubMenu24, 'other_pages_css_js' );
+    add_action( 'admin_print_styles-' . $SubMenu25, 'other_pages_css_js' );
+
 }// end of menu function
 
 function calendar_css_js() {
-    wp_register_script(
-        'jquery-custom',
-        plugins_url('menu-pages/fullcalendar-assets-new/js/jquery-ui-1.8.23.custom.min.js', __FILE__),
-        array('jquery'),
-        true
-    );
-
+    wp_register_script( 'jquery-custom',plugins_url('menu-pages/fullcalendar-assets-new/js/jquery-ui-1.8.23.custom.min.js', __FILE__), array('jquery'), true );
     wp_enqueue_script('full-calendar',plugins_url('/menu-pages/fullcalendar-assets-new/js/fullcalendar.min.js', __FILE__),array('jquery','jquery-custom'));
     wp_enqueue_script('datepicker-js',plugins_url('/menu-pages/datepicker-assets/js/jquery.ui.datepicker.js', __FILE__),array('jquery','jquery-custom'));
+
     wp_register_style('bootstrap-css',plugins_url('/bootstrap-assets/css/bootstrap.css', __FILE__));
     wp_enqueue_style('bootstrap-css');
     wp_enqueue_style('fullcalendar-css',plugins_url('/menu-pages/fullcalendar-assets-new/css/fullcalendar.css', __FILE__));
     wp_enqueue_style('datepicker-css',plugins_url('/menu-pages/datepicker-assets/css/jquery-ui-1.8.23.custom.css', __FILE__));
     wp_enqueue_style('apcal-css',plugins_url('/menu-pages/css/apcal-css.css', __FILE__));
+
 }
 
 function other_pages_css_js() {
     wp_register_style('bootstrap-css',plugins_url('/bootstrap-assets/css/bootstrap.css', __FILE__));
     wp_enqueue_style('bootstrap-css');
     wp_enqueue_style('datepicker-css',plugins_url('/menu-pages/datepicker-assets/css/jquery-ui-1.8.23.custom.css', __FILE__));
+    wp_enqueue_style('fancybox-css',plugins_url('/bootstrap-assets/css/jquery.fancybox.css', __FILE__));
+    wp_enqueue_style('fancybox-thumbs-css',plugins_url('/bootstrap-assets/css/jquery.fancybox-thumbs.css', __FILE__));
+
     wp_enqueue_script('tooltip',plugins_url('/bootstrap-assets/js/bootstrap-tooltip.js', __FILE__),array('jquery'));
     wp_enqueue_script('bootstrap-affix',plugins_url('/bootstrap-assets/js/bootstrap-affix.js', __FILE__));
     wp_enqueue_script('bootstrap-application',plugins_url('/bootstrap-assets/js/application.js', __FILE__));
+    wp_enqueue_script('fancybox-js',plugins_url('/bootstrap-assets/js/jquery.fancybox.js', __FILE__),array('jquery'));
+    wp_enqueue_script('fancybox-thumbs-js',plugins_url('/bootstrap-assets/js/jquery.fancybox-thumbs.js', __FILE__),array('jquery'));
 
     //font-awesome js n css
     wp_enqueue_style(
@@ -256,7 +260,10 @@ add_action( 'wp', 'shortcode_detect' );
  function display_manage_client_page() {
      require_once("menu-pages/client_manage.php");
  }
- 
+function display_medical_cart_page() {
+    require_once("menu-pages/medical_cart.php");
+}
+
  //manage-appointment page
  function display_manage_appointment_page() {
      require_once("menu-pages/manage-appointments.php");
@@ -355,3 +362,13 @@ function load_apcal_reminder() {
     }
     add_filter( 'cron_schedules', 'custom_recurrence_time' );
 }//end of load_apcal_reminder
+
+add_action('admin_enqueue_scripts', 'my_admin_scripts');
+
+function my_admin_scripts() {
+    if (isset($_GET['page']) && $_GET['page'] == 'medical_cart') {
+        wp_enqueue_media();
+        wp_register_script('my-admin-js', WP_PLUGIN_URL.'/my-plugin/my-admin.js', array('jquery'));
+        wp_enqueue_script('my-admin-js');
+    }
+}

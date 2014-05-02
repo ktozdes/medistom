@@ -4,3 +4,31 @@
     table {
         background-color: #FFFFFF;
     }
+    .error{
+        color:#FF0000;
+    }
+    .messagebox{
+        font-size:14pt;
+        padding:2px;
+    }
+    .medical_cart_list img{
+        border:3px solid #f2f8ff;
+    }
+    .imglist {
+        overflow: hidden;
+    }
+
+    .imglist a {
+        float: left;
+        margin: 5px;
+    }
+
+    .imglist a img {
+        vertical-align: top;
+        padding: 1px;
+        border: 1px solid #ccc;
+        max-width: 200px;
+        max-height: 75px;
+    }
+    .fancybox-lock{
+    }

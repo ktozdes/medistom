@@ -147,6 +147,37 @@
             echo "<script>alert('".__('Group name cannot be blank.','appointzilla')."');</script>";
         }
     }
+	
+	//creates cabinets
+	if (isset($_POST['CreateCabinet'])){
+		global $wpdb;
+		print_r($_POST);
+        $table_name = $wpdb->prefix . "ap_cabinets";
+        
+		$wpdb->insert( 
+			$table_name, 
+			array( 
+				'cabinet_name' => $_POST['cabinet_name'], 
+				'cabinet_note' => $_POST['cabinet_note']
+			), 
+			array( '%s', '%s') 
+		);
+		$cabinetID = $wpdb->insert_id;
+        if($cabinetID !== false){
+			$table_name = $wpdb->prefix . "ap_cabinets_staff";
+			foreach($_POST['staff'] as $singleStaffID){
+				$wpdb->insert( 
+					$table_name, 
+					array( 
+						'cabinet_id' => $cabinetID, 
+						'staff_id' => $singleStaffID
+					)
+				);
+			}
+            echo "<script>alert('". __('New Cabinet successfully created.','appointzilla') ."');</script>";
+            echo "<script>location.href='?page=service';</script>";
+        }
+	}
 
     //Delete service category
     if(isset($_GET['gid'])) {
@@ -175,6 +206,18 @@
             $update_app_query_appointment = "UPDATE $app_table_name SET `service_id` = '1' WHERE `service_id` ='$DeletesId';";
             $wpdb->query($update_app_query_appointment);
             echo "<script>alert('".__('Service successfully deleted.','appointzilla')."');</script>";
+            echo "<script>location.href='?page=service';</script>";
+        }
+    }
+	if(isset($_GET['cid'])) {
+        $DeletesId = $_GET['sid'];
+        $cabinetsTable  = $wpdb->prefix . "ap_cabinets";
+		$cabinetsStaffTable 	= $wpdb->prefix . "ap_cabinets_staff";
+		$delete_app_query="DELETE FROM $cabinetsTable WHERE `cabinet_id` = '$DeletesId';";
+        if($wpdb->query($delete_app_query)) {
+            //update all service_id  in appointment data base
+            $delete_app_query="DELETE FROM $cabinetsStaffTable WHERE `cabinet_id` = '$DeletesId';";
+            echo "<script>alert('".__('Cabinet successfully deleted.','appointzilla')."');</script>";
             echo "<script>location.href='?page=service';</script>";
         }
     }
@@ -222,6 +265,15 @@
         jQuery('#gruopnamebox').hide();
         jQuery('#gruopbuttonbox').show();
     }
+	function createcabinet() {
+        jQuery('#cabinetbox').show();
+        jQuery('#cabinetbuttonbox').hide();
+    }
+
+    function cancelcabinet() {
+        jQuery('#cabinetbox').hide();
+        jQuery('#cabinetbuttonbox').show();
+    }
     </script>
     <script type="text/javascript">
     jQuery(document).ready(function () {
@@ -242,6 +294,115 @@
             jQuery('#gruopnamebox').hide();
             jQuery('#gruopbuttonbox').show();
         });
+		
+		//cabinet
+		jQuery('#CreateCabinet').click(function() {
+            jQuery('.error').hide();
+            var gruopname = jQuery("#cabinet_name").val();
+            if (gruopname == "") {
+                jQuery("#cabinet_name").after('<span class="error">&nbsp;<br><strong><?php _e('Cabinet name cannot be blank.','appointzilla'); ?></strong></span>');
+                return false;
+            } else {
+                var gruopname = isNaN(gruopname);
+                if(gruopname == false) {
+                    jQuery("#cabinet_name").after('<span class="error">&nbsp;<br><strong><?php _e('invalid Category name.','appointzilla'); ?></strong></span>');
+                    return false;
+                }
+            }
+            jQuery('#cabinetbox').hide();
+            jQuery('#cabinetbuttonbox').show();
+        });
     });
     </script>
+</div>
+
+
+
+<div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-wrench"></i> <?php _e('Cabinets','appointzilla');?></h3></div>
+<div class="bs-docs-example tooltip-demo">
+	<table width="100%" class="table table-hover">
+		<thead>
+			<tr>
+				<td><strong><?php _e('Name','appointzilla');?></strong></td>
+				<td><strong><?php _e('Note','appointzilla');?></strong></td>
+				<td><strong> <?php _e('Assigned Staff','appointzilla');?></strong></td>
+				<td><strong> <?php _e('Action','appointzilla');?></strong></td>
+			</tr>
+		</thead>
+		<tbody>
+	<?php
+	global $wpdb;
+    //get all category list
+    $cabinetsTable  = $wpdb->prefix . "ap_cabinets";
+	$staffTable 	= $wpdb->prefix . "ap_staff";
+	$cabinetsStaffTable 	= $wpdb->prefix . "ap_cabinets_staff";
+    $cabinets = $wpdb->get_results("select `$cabinetsTable`.`cabinet_id`, cabinet_name, cabinet_note,`$staffTable`.`name` as 'staff_name'  from `$cabinetsTable`
+		LEFT JOIN `$cabinetsStaffTable` on `$cabinetsTable`.`cabinet_id` = `$cabinetsStaffTable`.`cabinet_id`
+		LEFT JOIN `$staffTable` on `$cabinetsStaffTable`.`staff_id` = `$staffTable`.`id`
+		ORDER BY `$cabinetsTable`.`cabinet_id`
+	", ARRAY_A);
+    foreach($cabinets as $single_cabinet):
+	if ($single_cabinet[cabinet_id]!=$previous_cabinet[cabinet_id] && isset($previous_cabinet)):?>
+		<tr class="odd" style="border-bottom:1px;">
+			<td><em><?php echo ucwords($previous_cabinet['cabinet_name']); ?></em></td>
+			<td><em><?php echo ucfirst($previous_cabinet['cabinet_note']); ?></em> </td>
+			<td><em><?php echo ucfirst($assigned_staff); ?></em> </td>
+			<td class="button-column">
+				<a rel="tooltip" href="?page=manage-service&cid=<?php echo $previous_cabinet[cabinet_id]; ?>" title="<?php _e('Update','appointzilla');?>"><i class="icon-pencil"></i></a> &nbsp;
+				<?php if($service->id != 1 )  { ?>
+				<a rel="tooltip" href="?page=service&cid=<?php echo $service->id; ?>" onclick="return confirm('<?php _e('Do you want to delete this service?','appointzilla');?>')" title="<?php _e('Delete','appointzilla');?>" ><i class="icon-remove"></i><?php } ?></td>
+		</tr>
+	<?php 
+	$assigned_staff = '';
+	endif;
+	$previous_cabinet = $single_cabinet;
+	$assigned_staff = (strlen($assigned_staff)>3)?$assigned_staff .' , '. $single_cabinet['staff_name']:$single_cabinet['staff_name'];
+	
+    endforeach; ?>
+		<tr class="odd" style="border-bottom:1px;">
+			<td><em><?php echo ucwords($previous_cabinet['cabinet_name']); ?></em></td>
+			<td><em><?php echo ucfirst($previous_cabinet['cabinet_note']); ?></em> </td>
+			<td><em><?php echo ucfirst($assigned_staff); ?></em> </td>
+			<td class="button-column">
+				<a rel="tooltip" href="?page=manage-service&cid=<?php echo $previous_cabinet['cabinet_id']; ?>" title="<?php _e('Update','appointzilla');?>"><i class="icon-pencil"></i></a> &nbsp;
+				<?php if($service->id != 1 )  { ?>
+				<a rel="tooltip" href="?page=service&cid=<?php echo $previous_cabinet['cabinet_id']; ?>" onclick="return confirm('<?php _e('Do you want to delete this service?','appointzilla');?>')" title="<?php _e('Delete','appointzilla');?>" ><i class="icon-remove"></i><?php } ?></td>
+		</tr>
+	</tbody>
+    </table>
+    <!---New category div box--->
+    <div id="cabinetbuttonbox">
+        <a class="btn btn-primary" href="javascript:void(0)" rel="tooltip" class="Create Gruop" onclick="createcabinet()"><i class="icon-plus icon-white"></i> <?php _e('Create New Cabinet','appointzilla');?></a></u>
+    </div>
+	<div style="display:none;" id="cabinetbox">
+    <form method="post">
+        <table width="100%" style="background-color:transparent!important;">
+		<thead>
+		<tr>
+			<td><strong><?php _e('Name','appointzilla');?></strong></td>
+			<td><strong><?php _e('Note','appointzilla');?></strong></td>
+			<td><strong> <?php _e('Assigned Staff','appointzilla');?></strong></td>
+		</tr>
+		</thead>
+		<tbody>
+			<tr>
+			<td><?php _e('Cabinet Name','appointzilla');?> : <input type="text" id="cabinet_name" name="cabinet_name" class="inputheight" /></td>
+			<td><?php _e('Cabinet Note','appointzilla');?> : <input type="text" id="cabinet_note" name="cabinet_note" class="inputheight" /></td>
+			<td><?php _e('Assign Staff(s)','appointzilla');?> : <?php _e('Use CTRL to Select Multiple Staff(s)','appointzilla');?>
+			<select id="staff" name="staff[]" multiple="multiple" size="7" style="width:300px;">
+				<?php 
+				$staffTable 	= $wpdb->prefix . "ap_staff";
+				$staffs = $wpdb->get_results("select *  from `$staffTable`",ARRAY_A);
+				foreach($staffs as $single_staff):
+				?>
+				<option value="<?php echo $single_staff['id'];?>"><?php echo $single_staff['name'];?></option>
+				<?php endforeach;?>
+				</select></td>
+			</tr>
+		</tbody>
+		</table>
+        <button style="margin-bottom:10px;" id="CreateCabinet" type="submit" class="btn" name="CreateCabinet"><i class="icon-ok"></i> <?php _e('Create Cabinet','appointzilla');?></button>
+        <button style="margin-bottom:10px;" id="CancelCabinet" type="button" class="btn" name="CancelCabinet" onclick="cancelcabinet()"><i class="icon-remove"></i> <?php _e('Cancel','appointzilla');?></button>
+    </form>
+    </div>
 </div>
