@@ -916,40 +916,24 @@ function appointment_calendar_shortcode() {
                         $AllCategory = $wpdb->get_results($FindCategorySQL, OBJECT); ?>
 
                         <style type="text/css"> .mycss { font-weight:bold; } </style>
-                        <strong><?php _e('Select Service:', 'appointzilla'); ?></strong><br>
-                        <select name="servicelist" id="servicelist" style="width:100%">
-                            <option value="0"><?php _e('Select Service', 'appointzilla'); ?></option>
-                        <?php $cal_admin_currency_id = get_option('cal_admin_currency');
-                        if($cal_admin_currency_id) {
-                            $CurrencyTableName = $wpdb->prefix . "ap_currency";
-                            $cal_admin_currency = $wpdb->get_row("SELECT `symbol` FROM `$CurrencyTableName` WHERE `id` = '$cal_admin_currency_id'");
-                            $cal_admin_currency = $cal_admin_currency->symbol;
-                        } else {
-                            $cal_admin_currency = "&#36;";
-                        }
-
-                        if($AllCalendarSettings['show_service_cost'] == 'yes') $ShowCost = 1; else  $ShowCost = 0;
-                        if($AllCalendarSettings['show_service_duration'] == 'yes') $ShowDuration = 1; else  $ShowDuration = 0;
-                        $ServiceTable = $wpdb->prefix."ap_services";
-                        foreach($AllCategory as $Category) {
-                            echo "<option value='$Category->id' disabled class='mycss'>".ucwords($Category->name)."</option>";
-                            $FindServiceSQL = "SELECT * FROM `$ServiceTable` WHERE `availability` = 'yes' and `category_id` = '$Category->id' order by `name` ASC";
-                            $AllService = $wpdb->get_results($FindServiceSQL, OBJECT);
-                            if(count($AllService)) {
-                                foreach($AllService as $Service) { ?>
-                                    <option value="<?php echo $Service->id; ?>">&nbsp;&nbsp;
-                                        <?php echo ucwords($Service->name);
-                                        if($ShowDuration || $ShowCost) echo " (";
-                                        if($ShowDuration) { echo $Service->duration."min"; } if($ShowDuration && $ShowCost) echo "/";
-                                        if($ShowCost) { echo $cal_admin_currency. $Service->cost; }
-                                        if($ShowDuration || $ShowCost) echo ")"; ?>
-                                    </option><?php
+                        <div id="stfflistdiv">
+                            <strong><?php _e('Select Staff:', 'appointzilla'); ?></strong><br>
+                            <select name='stafflist' id='stafflist' style="width:100%">
+                                <?php //get all staff id list by service id
+                                $ServiceTable = $wpdb->prefix . "ap_services";
+                                $StaffTable = $wpdb->prefix . "ap_staff";
+                                $StaffList = $wpdb->get_results("SELECT `id`, `name` FROM `$StaffTable`", ARRAY_A);
+                                if(count($StaffList)>0) {
+                                    echo "<option>".__("Select Staff")."</option>";
+                                    foreach($StaffList as $singleStaff) {
+                                        echo "<option value='".$singleStaff['id']."'>&nbsp;&nbsp;".ucwords($singleStaff['name'])."</option>";
+                                    }
+                                } else {
+                                    echo "<option value='1'>".__("No Staff Assigned")."</option>";
                                 }
-                            } else {
-                                echo "<option disabled>&nbsp;&nbsp;&nbsp;".ucwords(__('No service in this category', 'appointzilla'))."</option>";
-                            }
-                        } ?>
-                        </select>
+                                ?>
+                            </select>
+                        </div>
                         <br>
                         <script type="text/javascript">
                             //load staff according to service -  start

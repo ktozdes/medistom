@@ -1,25 +1,32 @@
 <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-wrench"></i> <?php _e('Services','appointzilla');?></h3></div>
-<div class="bs-docs-example tooltip-demo">
+<div class="bs-docs-example tooltip-demo jquery-tab">
+<ul>
 <?php
     global $wpdb;
     //get all category list
     $ServiceCategoryTable = $wpdb->prefix . "ap_service_category";
-    $service_category = $wpdb->get_results("select * from `$ServiceCategoryTable`");
+    $service_category = $wpdb->get_results("select * from `$ServiceCategoryTable` order by name asc");
     foreach($service_category as $gruopname) { ?>
-        <table width="100%" class="table table-hover">
-            <thead>
-                <tr style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;">
-                    <th colspan="3">
-                         <div id="gruopnamedivbox<?php echo $gruopname->id; ?>"><?php if($gruopname->name == 'Default') echo _e('Default', 'appointzilla'); else echo $gruopname->name; ?></div>
-                         <div id="gruopnameedit<?php echo $gruopname->id; ?>" style="display:none; height:25px;">
-                             <form method="post">
+    <li><a href="#tab_cat_id-<?php echo $gruopname->id; ?>"><?php echo $gruopname->name; ?></a></li>
+    <?php }?>
+</ul>
+<?php
+foreach($service_category as $gruopname) { ?>
+    <div id="tab_cat_id-<?php echo $gruopname->id; ?>">
+    <table width="100%" class="table table-hover">
+                    <thead>
+                    <tr style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;">
+                    <th colspan="5">
+                        <div id="gruopnamedivbox<?php echo $gruopname->id; ?>"><?php echo $gruopname->name; ?></div>
+                        <div id="gruopnameedit<?php echo $gruopname->id; ?>" style="display:none; height:25px;">
+                            <form method="post">
                                 <input type="text" id="editgruopname" class="inputheight" name="editgruopname" value="<?php echo $gruopname->name; ?>"/>
                                 <button  id="editgruop" value="<?php echo $gruopname->id; ?>" name="editgruop" type="submit" class="btn"><i class="icon-ok"></i> <?php _e('Save','appointzilla');?> </button>
                                 <button  id="editgruopcancel" type="button" class="btn"  onclick="canceleditgrup(<?php echo $gruopname->id; ?>)"><i class="icon-remove"></i> <?php _e('Cancel','appointzilla');?> </button>
-                             </form>
+                            </form>
                         </div>
                     </th>
-                    <th colspan="7"> <!--- header rename and delete button right box-->
+                    <th colspan="6"> <!--- header rename and delete button right box-->
                         <div align="right" style="margin-right:35px;">
                             <?php if($gruopname->id !='0') { ?>
                                 <a rel="tooltip" class="btn btn-danger btn-small" href="#" id="<?php echo $gruopname->id; ?>" onclick="editgruop(<?php echo $gruopname->id; ?>)" title="<?php _e('Rename Category','appointzilla');?>"><?php _e('Rename','appointzilla');}?></a>	  <?php if($gruopname->id !='1') {echo" |"; ?>
@@ -29,12 +36,10 @@
                     </th>
                 </tr>
                 <tr>
+                    <td><strong><?php _e('Code','appointzilla');?></strong></td>
                     <td><strong><?php _e('Name','appointzilla');?></strong></td>
-                    <td><strong><?php _e('Description','appointzilla');?></strong></td>
-                    <td><strong> <?php _e('Duration','appointzilla');?></strong></td>
-                    <td><strong><?php _e('Padding Time','appointzilla');?></strong></td>
                     <td><strong><?php _e('Cost','appointzilla');?></strong></td>
-                    <!--<td><strong><?php// _e('Capacity','appointzilla');?></strong></td>-->
+                    <td><strong><?php _e('Implant','appointzilla');?></strong></td>
                     <td><strong><?php _e('Accept Payment','appointzilla');?></strong></td>
                     <td><strong><?php _e('Payment Type','appointzilla');?></strong></td>
                     <td><strong><?php _e('Amount','appointzilla');?></strong></td>
@@ -43,62 +48,63 @@
                 </tr>
             </thead>
             <tbody><?php // get service list group wise
-                        $table_name = $wpdb->prefix . "ap_services";
-                        $ServiceDetails = $wpdb->get_results("SELECT * FROM $table_name WHERE `category_id` ='$gruopname->id'");
-                        foreach($ServiceDetails as $service) { ?>
-                <tr class="odd" style="border-bottom:1px;">
-                    <td><em><?php echo ucwords($service->name); ?></em></td>
-                    <td> <em><?php echo ucfirst($service->desc); ?></em> </td>
-                    <td><em><?php echo $service->duration. " "; if($service->unit == 'minute') echo _e('Minute', 'appointzilla'); else echo _e('Minute', 'appointzilla');?></em></td>
-                    <td><em><?php echo $service->paddingtime. " "; if($service->unit == 'minute') echo _e('Minute', 'appointzilla'); else echo _e('Minute', 'appointzilla'); ?></em></td>
-                    <td>
-                        <em>
-                            <?php $cal_admin_currency_id = get_option('cal_admin_currency');
-                                if($cal_admin_currency_id) {
-                                    $CurrencyTableName = $wpdb->prefix . "ap_currency";
-                                    $cal_admin_currency = $wpdb->get_row("SELECT `symbol` FROM `$CurrencyTableName` WHERE `id` = '$cal_admin_currency_id'");
-                                    $cal_admin_currency = $cal_admin_currency->symbol;
-                                } else {
-                                    $cal_admin_currency = "&#36;";
-                                }
-                                echo $cal_admin_currency.$service->cost;
-                            ?>
-                        </em>
-                    </td>
-                    <td><em><?php if($service->accept_payment == 'yes') echo _e('Yes', 'appointzilla'); else echo _e('No', 'appointzilla'); ?></em></td>
-                    <td>
-                        <em>
-                            <?php
-                                if($service->payment_type == 'percentage') echo _e('In Percentage', 'appointzilla');
-                                if($service->payment_type == 'full') echo _e('Full Payment', 'appointzilla');
-                                if($service->accept_payment == 'no' || $service->accept_payment == '') echo _e('None', 'appointzilla');
-                            ?>
-                        </em>
-                    </td>
+            $table_name = $wpdb->prefix . "ap_services";
+            $ServiceDetails = $wpdb->get_results("SELECT * FROM $table_name WHERE `category_id` ='$gruopname->id' ORDER BY implant");
+            foreach($ServiceDetails as $service) { ?>
+            <tr class="odd" style="border-bottom:1px;">
+                <td><em><?php echo ucwords($service->code); ?></em></td>
+                <td><em><?php echo ucwords($service->name); ?></em></td>
+                <td>
+                    <em>
+                    <?php $cal_admin_currency_id = get_option('cal_admin_currency');
+                        if($cal_admin_currency_id) {
+                            $CurrencyTableName = $wpdb->prefix . "ap_currency";
+                            $cal_admin_currency = $wpdb->get_row("SELECT `symbol` FROM `$CurrencyTableName` WHERE `id` = '$cal_admin_currency_id'");
+                            $cal_admin_currency = $cal_admin_currency->symbol;
+                        } else {
+                            $cal_admin_currency = "&#36;";
+                        }
+                        echo $service->cost.' '.$cal_admin_currency;
+                    ?>
+                    </em>
+                </td>
+                <td><em><?php if($service->implant == 'yes') echo _e('Yes', 'appointzilla'); else echo _e('No', 'appointzilla'); ?></em></td>
+                <td><em><?php if($service->accept_payment == 'yes') echo _e('Yes', 'appointzilla'); else echo _e('No', 'appointzilla'); ?></em></td>
+                <td>
+                    <em>
+                        <?php
+                            if($service->payment_type == 'percentage') echo _e('In Percentage', 'appointzilla');
+                            if($service->payment_type == 'full') echo _e('Full Payment', 'appointzilla');
+                            if($service->accept_payment == 'no' || $service->accept_payment == '') echo _e('None', 'appointzilla');
+                        ?>
+                    </em>
+                </td>
 
-                    <td>
-                        <em>
-                            <?php
-                                if($service->payment_type == 'percentage') echo $service->percentage_ammount."%";
-                                if($service->payment_type == 'full') echo _e('Full', 'appointzilla');
-                            if($service->accept_payment == 'no' || $service->accept_payment == '') echo _e('None', 'appointzilla'); ?>
-                        </em>
-                    </td>
-                    <td><em><?php if($service->availability == 'yes') echo _e('Yes', 'appointzilla'); else echo _e('No', 'appointzilla'); ?></em></td>
-                    <td class="button-column">
-                        <a rel="tooltip" href="?page=manage-service&viewid=<?php echo $service->id; ?>" data-original-title="<?php _e('View','appointzilla');?>"><i class="icon-eye-open"></i></a>&nbsp;
-                        <a rel="tooltip" href="?page=manage-service&sid=<?php echo $service->id; ?>" title="<?php _e('Update','appointzilla');?>"><i class="icon-pencil"></i></a> &nbsp;
-                        <?php if($service->id != 1 )  { ?>
-                        <a rel="tooltip" href="?page=service&sid=<?php echo $service->id; ?>" onclick="return confirm('<?php _e('Do you want to delete this service?','appointzilla');?>')" title="<?php _e('Delete','appointzilla');?>" ><i class="icon-remove"></i><?php } ?></td>
-                </tr>
-                    <?php } ?>
-                <tr>
-                    <td colspan="10">
-                        <strong><a href="?page=manage-service&gid=<?php echo $gruopname->id; ?>" rel="tooltip" title="<?php _e('Add New Service to this Category','appointzilla');?>"><i class="icon-plus"></i> <?php _e('Add New Service to this Category','appointzilla');?></a></strong>
-                    </td>
-                </tr>
+                <td>
+                    <em>
+                        <?php
+                            if($service->payment_type == 'percentage') echo $service->percentage_ammount."%";
+                            if($service->payment_type == 'full') echo _e('Full', 'appointzilla');
+                        if($service->accept_payment == 'no' || $service->accept_payment == '') echo _e('None', 'appointzilla'); ?>
+                    </em>
+                </td>
+                <td><em><?php if($service->availability == 'yes') echo _e('Yes', 'appointzilla'); else echo _e('No', 'appointzilla'); ?></em></td>
+                <td class="button-column">
+                    <a rel="tooltip" href="?page=manage-service&viewid=<?php echo $service->id; ?>" data-original-title="<?php _e('View','appointzilla');?>"><i class="icon-eye-open"></i></a>&nbsp;
+                    <a rel="tooltip" href="?page=manage-service&sid=<?php echo $service->id; ?>" title="<?php _e('Update','appointzilla');?>"><i class="icon-pencil"></i></a> &nbsp;
+                    <?php if($service->id != 1 )  { ?>
+                    <a rel="tooltip" href="?page=service&sid=<?php echo $service->id; ?>" onclick="return confirm('<?php _e('Do you want to delete this service?','appointzilla');?>')" title="<?php _e('Delete','appointzilla');?>" ><i class="icon-remove"></i><?php } ?></td>
+            </tr>
+            <?php } ?>
+            <tr>
+                <td colspan="10">
+                    <strong><a href="?page=manage-service&gid=<?php echo $gruopname->id; ?>" rel="tooltip" title="<?php _e('Add New Service to this Category','appointzilla');?>"><i class="icon-plus"></i> <?php _e('Add New Service to this Category','appointzilla');?></a></strong>
+                </td>
+            </tr>
           </tbody>
-        </table><?php
+        </table>
+    </div>
+    <?php
     } ?>
 
     <!---New category div box--->
@@ -277,6 +283,7 @@
     </script>
     <script type="text/javascript">
     jQuery(document).ready(function () {
+        jQuery('.jquery-tab').tabs();
         // create new group js
         jQuery('#CreateGruop').click(function() {
             jQuery('.error').hide();

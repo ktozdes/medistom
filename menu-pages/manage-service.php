@@ -11,6 +11,11 @@
         <form action="" method="post" name="manageservice">
             <table width="100%" class="table" >
                 <tr>
+                    <th width="20%" scope="row"><?php _e('Code','appointzilla'); ?></th>
+                    <td width="3%"><strong>:</strong></td>
+                    <td width="77%"><input name="code" type="text" id="code"  value="<?php if($servicedetails) echo $servicedetails->code; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Code','appointzilla');?>"><i class="icon-question-sign"></i></a></td>
+                </tr>
+                <tr>
                     <th width="20%" scope="row"><?php _e('Name','appointzilla'); ?></th>
                     <td width="3%"><strong>:</strong></td>
                     <td width="77%"><input name="name" type="text" id="name"  value="<?php if($servicedetails) echo $servicedetails->name; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Name','appointzilla');?>"><i class="icon-question-sign"></i></a></td>
@@ -20,39 +25,25 @@
                     <td><strong>:</strong></td>
                     <td><textarea name="desc" id="desc"><?php if($servicedetails) echo $servicedetails->desc; ?></textarea>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Description','appointzilla');?>"><i class="icon-question-sign"></i></a>				</td>
                 </tr>
-                <tr>
-                    <th scope="row"><strong><?php _e('Duration','appointzilla');?></strong></th>
-                    <td><strong>:</strong></td>
-                    <td><input name="duration" type="text" id="duration" onchange="checkduration()" value="<?php if($servicedetails) echo $servicedetails->duration; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Duration<br>Enter Numeric Value In Multiple Of 5<br>Eg: 15, 30, 60','appointzilla');?>"><i class="icon-question-sign"></i> </a></td>
-                </tr>
-                <tr>
-                    <th scope="row"><strong><?php _e('Duration Unit','appointzilla');?></strong></th>
-                    <td><strong>:</strong></td>
-                    <td>
-                        <select id="durationunit" name="durationunit">
-                            <option value="0"><?php _e('Select Duration\'s Unit','appointzilla'); ?></option>
-                            <option value="minute" <?php if($servicedetails){ if($servicedetails->unit == 'minute') echo "selected"; } ?> ><?php _e('Minute(s)','appointzilla');?></option>
-                        </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Duration Unit','appointzilla');?>"><i class="icon-question-sign"></i></a>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><strong><?php _e('Padding Time','appointzilla');?></strong></th>
-                    <td><strong>:</strong></td>
-                    <td><input name="paddingtime" type="text" id="paddingtime" value="<?php if($servicedetails) { echo $servicedetails->paddingtime; } else echo "0"; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Padding / Break / Refresh Time<br>Enter Numeric Value<br>Eg: 5, 10, 15, 20, 25 OR can be 0','appointzilla');?>" ><i class="icon-question-sign"></i></a></td>
-                </tr>
+
                 <tr>
                     <th scope="row"><strong><?php _e('Cost','appointzilla');?></strong></th>
                     <td><strong>:</strong></td>
                     <td><input name="cost" type="text" id="cost" value="<?php if($servicedetails) echo $servicedetails->cost; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Cost<br>Enter Numeric Value<br>Eg: 50, 100, 150','appointzilla');?>" ><i class="icon-question-sign"></i></a>				</td>
                 </tr>
-                <!--<tr>
-                    <th scope="row"><strong>
-                      <?php //_e('Capacity','appointzilla');?>
-                    </strong></th>
+                <tr>
+                    <th scope="row"><strong><?php _e('Duration','appointzilla');?></strong></th>
                     <td><strong>:</strong></td>
-                    <td><input name="capacity" type="text" id="capacity" value="<?php //if($servicedetails) echo $servicedetails->capacity; ?>" class="inputheight"/>
-                      &nbsp;<a href="#" rel="tooltip" title="<?php //_e('Service Capacity<br> Eg: 1, 5, 10, 25, 50, 100<br>Enter Numeric Value','appointzilla');?>"><i class="icon-question-sign"></i></a> </td>
-                </tr>-->
+                    <td><input name="duration" type="text" id="duration" value="<?php if($servicedetails) echo $servicedetails->duration; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Duration','appointzilla');?>" ><i class="icon-question-sign"></i></a></td>
+                </tr>
+                <tr>
+                    <th scope="row"><strong><?php _e('Implant','appointzilla');?></strong></th>
+                    <td><strong>:</strong></td>
+                    <td><select name="implant" id="implant">
+                            <option value="no" <?php if($servicedetails){ if($servicedetails->implant == 'no') echo "selected"; } ?>><?php _e('No','appointzilla');?></option>
+                            <option value="yes" <?php if($servicedetails){ if($servicedetails->implant == 'yes') echo "selected"; } ?>><?php _e('Yes','appointzilla');?></option>
+                        </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Implantology', 'appointzilla');?>"><i class="icon-question-sign"></i></td>
+                </tr>
                 <tr>
                     <th scope="row"><strong><?php _e('Accept Payment','appointzilla');?></strong></th>
                     <td><strong>:</strong></td>
@@ -62,14 +53,15 @@
                             <option value="yes" <?php if($servicedetails){ if($servicedetails->accept_payment == 'yes') echo "selected"; } ?>><?php _e('Yes','appointzilla');?></option>
                         </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Accept Payment On Booking','appointzilla');?>"><i class="icon-question-sign"></i></a>
                     </td>
-                 </tr>
+                </tr>
                 <tr id="PaymentTypeTr">
                     <th scope="row"><strong><?php _e('Payment Type','appointzilla');?></strong></th>
                     <td><strong>:</strong></td>
                     <td>
                         <select name="payment_type" id="payment_type" onchange="enablepercentagefields()">
                             <option value="percentage" <?php if($servicedetails){ if($servicedetails->payment_type == 'percentage') echo "selected"; } ?>><?php _e('In Percentage','appointzilla');?></option>
-                            <option value="full" <?php if($servicedetails){ if($servicedetails->payment_type == 'full') echo "selected"; } ?>><?php _e('Full Payment','appointzilla');?></option>
+                            <option value="full" <?php if($servicedetails){ if($servicedetails->payment_type == 'full') echo "selected"; }
+                            if (!$servicedetails) echo 'selected';?> ><?php _e('Full Payment','appointzilla');?></option>
                         </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Payment Type','appointzilla');?>" ><i class="icon-question-sign"></i></a>
                     </td>
                 </tr>
@@ -93,15 +85,14 @@
                     <th scope="row"><?php _e('Category','appointzilla');?></th>
                     <td><strong>:</strong></td>
                     <td>
-                        <select id="category" name="category">
+                        <select id="category_id" name="category_id">
                             <option value="0"><?php _e('Select Category','appointzilla');?></option>
                             <?php //get all category list
                             $table_name = $wpdb->prefix . "ap_service_category";
                             $service_category = $wpdb->get_results("select * from $table_name");
                             foreach($service_category as $gruopname) { ?>
                                 <option value="<?php echo $gruopname->id; ?>"
-                                <?php if($servicedetails){ if($servicedetails->category_id == $gruopname->id) echo "selected"; } ?><?php if(isset($_GET['gid']) == $gruopname->id) echo "selected"; ?> >
-                                <?php if($gruopname->name == 'Default') echo _e('Default', 'appointzilla'); else echo $gruopname->name; ?></option>
+                                <?php if($servicedetails){ if($servicedetails->category_id == $gruopname->id) echo "selected"; } ?><?php if( $_GET['gid']>0 && $_GET['gid'] == $gruopname->id) echo "selected='selected'"; ?> > <?php echo $gruopname->name; ?></option>
                             <?php } ?>
                         </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Select Category','appointzilla');?>"><i class="icon-question-sign"></i></a>
                     </td>
@@ -111,7 +102,7 @@
                     <td><strong>:</strong></td>
                     <td>
                         <label><?php _e('Use CTRL to Select Multiple Staff(s)','appointzilla');?></label>
-                        <select id="staff" name="staff[]" multiple="multiple" size="7" style="width:300px;">
+                        <select id="staff" name="staff_id[]" multiple="multiple" size="7" style="width:300px;">
                             <?php
                                 $StaffTableName = $wpdb->prefix . "ap_staff";
                                 $AllStaff = $wpdb->get_results("SELECT `id`, `name` FROM `$StaffTableName`", OBJECT);
@@ -139,7 +130,7 @@
             </table>
         </form><?php
     }
-	
+	//cabinet
 	if(isset($_GET['cid'])) {
         $sid = $_GET['cid'];
         $cabinetsTable  = $wpdb->prefix . "ap_cabinets";
@@ -200,62 +191,6 @@
             </table>
         </form><?php
     }
-	if(isset($_GET['sid']) || isset($_GET['gid'])) {
-        if(isset($_GET['gid'])) $sid = -1; else $sid = $_GET['sid'];
-        $ServiceTableName = $wpdb->prefix . "ap_services";
-        $servicedetails = $wpdb->get_row("SELECT * FROM `$ServiceTableName` WHERE `id` ='$sid'" ,OBJECT);
-        if($servicedetails) { $AllStaffIds = unserialize($servicedetails->staff_id); } ?>
-        <form action="" method="post" name="manageservice">
-            <table width="100%" class="table" >
-                <tr>
-                    <th width="20%" scope="row"><?php _e('Name','appointzilla'); ?></th>
-                    <td width="3%"><strong>:</strong></td>
-                    <td width="77%"><input name="name" type="text" id="name"  value="<?php if($servicedetails) echo $servicedetails->name; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Name','appointzilla');?>"><i class="icon-question-sign"></i></a></td>
-                </tr>
-				<tr>
-                    <th scope="row"><strong><?php _e('Availability','appointzilla');?></strong></th>
-                    <td><strong>:</strong></td>
-                    <td>
-                        <select id="availability" name="availability">
-                            <option value="0"><?php _e('Select Service Availability','appointzilla');?></option>
-                            <option value="yes" <?php if($servicedetails){ if($servicedetails->availability == 'yes') echo "selected"; } ?> ><?php _e('Yes','appointzilla');?></option>
-                            <option value="no" <?php if($servicedetails){ if($servicedetails->availability == 'no') echo "selected"; } ?> ><?php _e('No','appointzilla');?></option>
-                        </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Service Availability','appointzilla');?>"><i class="icon-question-sign"></i></a>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><?php _e('Assign Staff(s)','appointzilla');?></th>
-                    <td><strong>:</strong></td>
-                    <td>
-                        <label><?php _e('Use CTRL to Select Multiple Staff(s)','appointzilla');?></label>
-                        <select id="staff" name="staff[]" multiple="multiple" size="7" style="width:300px;">
-                            <?php
-                                $StaffTableName = $wpdb->prefix . "ap_staff";
-                                $AllStaff = $wpdb->get_results("SELECT `id`, `name` FROM `$StaffTableName`", OBJECT);
-                                foreach($AllStaff as $Staff)
-                                {
-                                    if( in_array($Staff->id, $AllStaffIds) )  { $selected = "Selected"; } else { $selected = ""; }
-                                    echo "<option value='$Staff->id' $selected >".ucwords($Staff->name)."</option>";
-                                }
-                            ?>
-                        </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Assign Staff(s) To This Service<br>Use CTRL To Select Multiple Staffs','appointzilla');?>" ><i class="icon-question-sign"></i></a>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">&nbsp;</th>
-                    <td>&nbsp;</td>
-                    <td>
-                        <?php if(isset($_GET['sid']))	{	?>
-                        <button id="saveservice" type="submit" class="btn" name="updateservice"><i class="icon-pencil"></i> <?php _e('Update','appointzilla');?></button>
-                        <?php } else {?>
-                        <button id="saveservice" type="submit" class="btn" name="saveservice"><i class="icon-ok"></i> <?php _e('Create','appointzilla');?></button>
-                        <?php } ?>
-                        <a href="?page=service" class="btn"><i class="icon-remove"></i> <?php _e('Cancel','appointzilla');?></a>
-                    </td>
-                </tr>
-            </table>
-        </form><?php
-    }
 
     //service views
     if(isset($_GET['viewid'])) {
@@ -263,6 +198,11 @@
         $ServiceTableName = $wpdb->prefix . "ap_services";
         $servicedetails = $wpdb->get_row("SELECT * FROM `$ServiceTableName` WHERE `id` ='$viewid'" ,OBJECT); ?>
         <table width="100%" class="detail-view table table-striped table-condensed">
+            <tr>
+                <th width="18%" scope="row"><?php _e('Code','appointzilla');?></th>
+                <td width="3%"><strong>:</strong></td>
+                <td width="79%"><?php echo $servicedetails->code; ?></td>
+            </tr>
             <tr>
                 <th width="18%" scope="row"><?php _e('Name','appointzilla');?></th>
                 <td width="3%"><strong>:</strong></td>
@@ -272,16 +212,6 @@
                 <th scope="row"><strong><?php _e('Description','appointzilla');?></strong></th>
                 <td><strong>:</strong></td>
                 <td><?php echo ucwords($servicedetails->desc); ?></td>
-            </tr>
-            <tr>
-                <th scope="row"><strong><?php _e('Duration','appointzilla');?></strong></th>
-                <td><strong>:</strong></td>
-                <td><?php echo $servicedetails->duration." "; if($servicedetails->unit == 'minute') echo _e('Minute', 'appointzilla'); else echo _e('Minute', 'appointzilla'); ?></td>
-            </tr>
-            <tr>
-                <th scope="row"><strong><?php _e('Padding Time','appointzilla');?></strong></th>
-                <td><strong>:</strong></td>
-                <td><?php echo $servicedetails->paddingtime." "; if($servicedetails->unit == 'minute') echo _e('Minute', 'appointzilla'); else echo _e('Minute', 'appointzilla'); ?></td>
             </tr>
             <tr>
                 <th scope="row"><strong><?php _e('Cost','appointzilla');?> </strong></th>
@@ -295,15 +225,15 @@
                         } else {
                             $cal_admin_currency = "&#36;";
                         }
-                        echo $cal_admin_currency.$servicedetails->cost;
+                        echo $servicedetails->cost.' '.$cal_admin_currency;
                     ?>
                 </td>
             </tr>
-            <!--<tr>
-                <th scope="row"><strong><?php //_e('Capacity','appointzilla');?> </strong></th>
+            <tr>
+                <th scope="row"><strong><?php _e('Implant','appointzilla');?></strong></th>
                 <td><strong>:</strong></td>
-                <td><?php //echo $servicedetails->capacity; ?></td>
-            </tr>-->
+                <td><?php if($servicedetails->implant == 'yes') echo _e('Yes', 'appointzilla'); else echo _e('No', 'appointzilla'); ?></td>
+            </tr>
             <tr>
                 <th scope="row"><strong><?php _e('Availability','appointzilla');?></strong></th>
                 <td><strong>:</strong></td>
@@ -330,40 +260,37 @@
 
     // Creating new service
     if(isset($_POST['saveservice'])) {
-        $servicename = strip_tags($_POST['name']);
-        $desc = strip_tags($_POST['desc']);
-        $duration = $_POST['duration'];
-        $durationunit = $_POST['durationunit'];
-        $paddingtime = $_POST['paddingtime'];
-        $cost = $_POST['cost'];
-        $capacity = 0; //$_POST['capacity'];
-        $availability = $_POST['availability'];
-        $category = $_POST['category'];
-        $staff = serialize($_POST['staff']);
+        unset($_POST['saveservice']);
+        $keysString = '';
+        $valuesString = '';
+        $_POST['staff_id'] = serialize($_POST['staff_id']);
+        $_POST['unit'] = 'minute';
 
-        $accept_payment = strip_tags($_POST['accept_payment']);
-        $payment_type = strip_tags($_POST['payment_type']);
+        $_POST['accept_payment'] = strip_tags($_POST['accept_payment']);
+        $_POST['payment_type'] = strip_tags($_POST['payment_type']);
 
-        if($accept_payment == 'yes' && $payment_type != 'full') {
-            $payment_type = strip_tags($_POST['payment_type']);
-            $percentage_ammount = strip_tags($_POST['percentage_ammount']);
+        if($_POST['accept_payment'] == 'yes' && $_POST['payment_type'] == 'full') {
+            $_POST['percentage_ammount'] = 0;
         }
 
-        if($accept_payment == 'yes' && $payment_type == 'full') {
-            $payment_type = strip_tags($_POST['payment_type']);
-            $percentage_ammount = 0;
+        if($_POST['accept_payment'] == 'no') {
+            $_POST['payment_type'] = 'none';
+            $_POST['percentage_ammount'] = 'none';
         }
 
-        if($accept_payment == 'no') {
-            $accept_payment = 'no';
-            $payment_type = 'none';
-            $percentage_ammount = 'none';
+        foreach($_POST as $key => $value){
+            $keysString .= (strlen($keysString)<3)?"`$key`":", `$key`";
+            $valuesString .= (strlen($valuesString)<3)?"'".strip_tags($value)."'":", '".strip_tags($value)."'";
         }
 
         $ServiceTable = $wpdb->prefix . "ap_services";
-        $CreateService = "INSERT INTO `$ServiceTable` (`id`, `name`, `desc`, `duration`, `unit`, `paddingtime`, `cost`, `capacity`, `availability`, `business_id`, `category_id`, `staff_id`, `accept_payment`, `payment_type`, `percentage_ammount`, `service_hours`) VALUES (NULL, '$servicename', '$desc', '$duration', '$durationunit', '$paddingtime', '$cost', '0', '$availability', '', '$category', '$staff', '$accept_payment', '$payment_type', '$percentage_ammount', '');";
+        $CreateService = "INSERT INTO `$ServiceTable` ($keysString) VALUES ($valuesString);";
         if($wpdb->query($CreateService)) {
             echo "<script>alert('".__('New service added successfully.','appointzilla')."')</script>";
+            echo "<script>location.href='?page=service';</script>";
+        }
+        else{
+            echo "<script>alert('".__('New service was not added.','appointzilla')."')</script>";
             echo "<script>location.href='?page=service';</script>";
         }
     }
@@ -371,55 +298,38 @@
 
     //update a service
     if(isset($_POST['updateservice'])) {
+        unset($_POST['updateservice']);
         $sid = $_GET['sid'];
-        $servicename = strip_tags($_POST['name']);
-        $desc = strip_tags($_POST['desc']);
-        $duration = $_POST['duration'];
-        $durationunit = $_POST['durationunit'];
-        $paddingtime = $_POST['paddingtime'];
-        $cost = $_POST['cost'];
-        $capacity = 0; //$_POST['capacity'];
-        $availability = $_POST['availability'];
-        $category = $_POST['category'];
-        $staff = serialize($_POST['staff']);
-        $accept_payment = strip_tags($_POST['accept_payment']);
+        $keysString = '';
+        $valuesString = '';
+        $_POST['staff_id'] = serialize($_POST['staff_id']);
 
-        if($accept_payment == 'yes' && $payment_type != 'full') {
-            $payment_type = strip_tags($_POST['payment_type']);
-            $percentage_ammount = strip_tags($_POST['percentage_ammount']);
+        $_POST['accept_payment'] = strip_tags($_POST['accept_payment']);
+        $_POST['payment_type'] = strip_tags($_POST['payment_type']);
+
+        if($_POST['accept_payment'] == 'yes' && $_POST['payment_type'] == 'full') {
+            $_POST['percentage_ammount'] = 0;
         }
 
-        if($accept_payment == 'yes' && $payment_type == 'full') {
-            $payment_type = strip_tags($_POST['payment_type']);
-            $percentage_ammount = 0;
+        if($_POST['accept_payment'] == 'no') {
+            $_POST['payment_type'] = 'none';
+            $_POST['percentage_ammount'] = 'none';
         }
 
-        if($accept_payment == 'no') {
-            $accept_payment = NULL;
-            $payment_type = NULL;
-            $percentage_ammount = NULL;
+        foreach($_POST as $key => $value){
+            $keysString .= (strlen($keysString)<3)?"`$key` = '".strip_tags($value)."'":", `$key` = '".strip_tags($value)."'";
         }
 
         $ServiceTable = $wpdb->prefix . "ap_services";
-        $update_service ="UPDATE `$ServiceTable` SET `name` = '$servicename',
-        `desc` = '$desc',
-        `duration` = '$duration',
-        `unit` = '$durationunit',
-        `paddingtime` = '$paddingtime',
-        `cost` = '$cost',
-        `capacity` = '$capacity',
-        `availability` = '$availability',
-        `category_id` = '$category',
-        `staff_id` = '$staff',
-        `accept_payment` = '$accept_payment',
-        `payment_type` = '$payment_type',
-        `percentage_ammount` = '$percentage_ammount' WHERE `id` ='$sid';";
+        $update_service ="UPDATE `$ServiceTable` SET $keysString WHERE `id` ='$sid';";
 
         if($wpdb->query($update_service)) {
+            //echo $wpdb->last_query;
             echo "<script>alert('".__('Service updated successfully.','appointzilla')."')</script>";
             echo "<script>location.href='?page=manage-service&viewid=$sid';</script>";
         } else {
-            echo "<script>alert('".__('Service updated successfully.','appointzilla')."')</script>";
+            //echo $wpdb->last_query;
+            echo "<script>alert('".__('Service was not updated.','appointzilla')."')</script>";
             echo "<script>location.href='?page=manage-service&viewid=$sid';</script>";
         }
     }
@@ -467,13 +377,6 @@
     <script type="text/javascript">
     function checkduration() {
         jQuery('.error').hide();
-        var duration = jQuery("input#duration").val();
-        var duration = duration%5;
-        if(duration !=0) {
-            jQuery("input#duration").after('<span class="error">&nbsp;<br><strong><?php _e('Duration will be in multiple of 5, like as: 5, 10, 15, 20, 25.','appointzilla');?></strong></span>');
-            //jQuery("input#Duration").focus();
-            return false;
-        }
     }
 
     //on change payment settings Yes/No
@@ -533,78 +436,6 @@
                     return false;
                 }
             }
-
-            var desc = jQuery("textarea#desc").val();
-            if (desc == "") {
-                jQuery("#desc").after('<span class="error">&nbsp;<br><strong><?php _e('Description cannot be blank.','appointzilla');?></strong></span>');
-                return false;
-            }
-
-            var duration = jQuery("input#duration").val();
-            if (duration == "") {
-                jQuery("#duration").after('<span class="error">&nbsp;<br><strong><?php _e('Duration cannot be blank.','appointzilla');?></strong></span>');
-                return false;
-            } else {
-                var duration = isNaN(duration);
-                if(duration == true) {
-                    jQuery("#duration").after('<span class="error">&nbsp;<br><strong><?php _e('Invalid Duration.','appointzilla');?></strong></span>');
-                    return false;
-                } else {
-                    var duration = jQuery("input#duration").val();
-                    var testvalue = duration%5;
-                    if(testvalue !=0) {
-                        jQuery("#duration").after('<span class="error">&nbsp;<br><strong><?php _e('Duration will be in multiple of 5, like as: 5, 10, 15, 20, 25.','appointzilla');?></strong></span>');
-                        //jQuery("input#Duration").focus();
-                        return false;
-                    }
-                }
-            }
-
-            //padding time
-            var paddingtime = jQuery("input#paddingtime").val();
-            if (paddingtime == "") {
-                jQuery("#paddingtime").after('<span class="error">&nbsp;<br><strong><?php _e('Padding time cannot be blank.','appointzilla');?></strong></span>');
-                return false;
-            } else {
-                var paddingtimeres = isNaN(paddingtime);
-                if(paddingtimeres == true) {
-                    jQuery("#paddingtime").after('<span class="error">&nbsp;<br><strong><?php _e('Invalid padding time.','appointzilla');?></strong></span>');
-                    return false;
-                } else {
-                    var paddingtime = jQuery("input#paddingtime").val();
-                    var testvalue = paddingtime%5;
-                    if(testvalue !=0) {
-                        jQuery("#paddingtime").after('<span class="error">&nbsp;<br><strong><?php _e('Padding time will be in multiple of 5, like as: 5, 10, 15, 20, 25 OR can be 0.','appointzilla');?></strong></span>');
-                        return false;
-                    }
-                }
-            }
-
-
-            var durationunit = jQuery('#durationunit').val();
-            if(durationunit == 0) {
-                jQuery("#durationunit").after('<span class="error">&nbsp;<br><strong>Select Durations Unit.</strong></span>');
-                return false;
-            }
-
-            /*var capacity = jQuery("input#capacity").val();
-            if (capacity == "")
-            {  	jQuery("#capacity").after('<span class="error">&nbsp;<br><strong><?php //_e('Capacity cannot be blank.','appointzilla');?></strong></span>');
-                return false;
-            }
-            else
-            {	var capacityres = isNaN(capacity);
-                if(capacityres == true)
-                {
-                    jQuery("#capacity").after('<span class="error">&nbsp;<br><strong><?php //_e('Invalid capacity.','appointzilla');?></strong></span>');
-                    return false;
-                }
-                if(capacity <1)
-                {
-                    jQuery("#capacity").after('<span class="error">&nbsp;<br><strong><?php //_e('Invalid capacity. Minimum capacity 1.','appointzilla');?></strong></span>');
-                    return false;
-                }
-            }*/
 
             var cost = jQuery("input#cost").val();
             if (cost == "") {

@@ -280,7 +280,9 @@ $wpdb->query($EventTable_sql);
 $ServiceTableName = $wpdb->prefix . "ap_services";
 $ServiceTable_sql = "CREATE TABLE IF NOT EXISTS `$ServiceTableName` (
   `id` INT( 11 ) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `code` VARCHAR( 50 ) NOT NULL ,
   `name` VARCHAR( 50 ) NOT NULL ,
+  `implant` VARCHAR( 10 ) NOT NULL DEFAULT 'no',
   `desc` TEXT NOT NULL ,
   `duration` INT( 11 ) NOT NULL ,
   `unit` VARCHAR( 10 ) NOT NULL ,

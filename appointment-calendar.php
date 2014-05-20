@@ -139,7 +139,7 @@ function calendar_css_js() {
     wp_enqueue_script('full-calendar',plugins_url('/menu-pages/fullcalendar-assets-new/js/fullcalendar.min.js', __FILE__),array('jquery','jquery-custom'));
     wp_enqueue_script('datepicker-js',plugins_url('/menu-pages/datepicker-assets/js/jquery.ui.datepicker.js', __FILE__),array('jquery','jquery-custom'));
 
-    wp_register_style('bootstrap-css',plugins_url('/bootstrap-assets/css/bootstrap.css', __FILE__));
+    wp_enqueue_style('bootstrap-css',plugins_url('/bootstrap-assets/css/bootstrap.css', __FILE__));
     wp_enqueue_style('bootstrap-css');
     wp_enqueue_style('fullcalendar-css',plugins_url('/menu-pages/fullcalendar-assets-new/css/fullcalendar.css', __FILE__));
     wp_enqueue_style('datepicker-css',plugins_url('/menu-pages/datepicker-assets/css/jquery-ui-1.8.23.custom.css', __FILE__));
@@ -154,6 +154,7 @@ function other_pages_css_js() {
     wp_enqueue_style('fancybox-css',plugins_url('/bootstrap-assets/css/jquery.fancybox.css', __FILE__));
     wp_enqueue_style('fancybox-thumbs-css',plugins_url('/bootstrap-assets/css/jquery.fancybox-thumbs.css', __FILE__));
 
+    wp_enqueue_script( 'jquery-ui',plugins_url('menu-pages/jquery-ui-custom/js/jquery-ui-1.10.4.custom.js', __FILE__), array('jquery'), true );
     wp_enqueue_script('tooltip',plugins_url('/bootstrap-assets/js/bootstrap-tooltip.js', __FILE__),array('jquery'));
     wp_enqueue_script('bootstrap-affix',plugins_url('/bootstrap-assets/js/bootstrap-affix.js', __FILE__));
     wp_enqueue_script('bootstrap-application',plugins_url('/bootstrap-assets/js/application.js', __FILE__));
