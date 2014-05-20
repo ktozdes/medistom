@@ -264,7 +264,6 @@
         $keysString = '';
         $valuesString = '';
         $_POST['staff_id'] = serialize($_POST['staff_id']);
-        $_POST['unit'] = 'minute';
 
         $_POST['accept_payment'] = strip_tags($_POST['accept_payment']);
         $_POST['payment_type'] = strip_tags($_POST['payment_type']);

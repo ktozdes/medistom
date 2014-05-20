@@ -98,10 +98,10 @@
                       <label><?php _e('Use CTRL to Select Multiple Service(s)','appointzilla'); ?></label>
                       <select id="service" name="service[]" multiple="multiple" size="7" style="width:300px;">
                           <!--<option value="0">Use CTRL to Select Multiple Service(s)</option>-->
-                          <?php $AllServiceStaff = $wpdb->get_results("SELECT `id`, `name` FROM `$ServiceTable`", OBJECT);
+                          <?php $AllServiceStaff = $wpdb->get_results("SELECT `id`,`code`, `name` FROM `$ServiceTable`", OBJECT);
                             foreach($AllServiceStaff as $Service) {
                                 if( in_array($Service->id, $AllServiceIds) ) $selected = "Selected"; else $selected = "";
-                                echo "<option value='$Service->id' $selected >$Service->name</option>"; }?>
+                                echo "<option value='$Service->id' $selected >".$Service->code ." ".$Service->name.'</option>'; }?>
                       </select>
                     &nbsp;<a href="#" rel="tooltip" title="<?php _e('Assign Staff(s) To This Service.&lt;br&gt;Use CTRL To Select Multiple Staffs','appointzilla'); ?>" ><i class="icon-question-sign"></i></a>
                   </td>
@@ -225,65 +225,33 @@
         $staff_city = strip_tags($_POST['staff_city']);
         $staffupdateid = $_POST['staffupdate'];
 
-        $Exitsstaffdetails = $wpdb->get_row("SELECT * FROM `$StaffTable` WHERE `email` = '$staff_email' ");
-        if($Exitsstaffdetails->email == $staff_email ) {
-            if($Exitsstaffdetails->id == $staffupdateid ) {
-                $update_staff = "UPDATE `$StaffTable` SET `name` = '$staff_name',
-                `email` = '$staff_email',
-                `phone` = '$staff_phone',
-                `experience` = '$staff_experience',
-                `group_id` = '$staff_group',
-                `address` = '$staff_address',
-                `city` = '$staff_city' WHERE `id` ='$staffupdateid';";
-                if($wpdb->query($update_staff)) { echo "<script>alert('".__('Staff details successfully updated.','appointzilla')."');</script>";
-                } else {
-                    echo "<script>alert('".__('Staff details successfully updated.','appointzilla')."');</script>";
-                }
-            } else {
-                echo "<script>alert('$staff_email ".__('is already in the database.','appointzilla')."');</script>";
-            }
-        } else {
-            $update_staff = "UPDATE `$StaffTable` SET `name` = '$staff_name',
+        $update_staff = "UPDATE `$StaffTable` SET `name` = '$staff_name',
             `email` = '$staff_email',
             `phone` = '$staff_phone',
             `experience` = '$staff_experience',
             `group_id` = '$staff_group',
             `address` = '$staff_address',
             `city` = '$staff_city' WHERE `id` ='$staffupdateid';";
-            if($wpdb->query($update_staff)) {	echo "<script>alert('".__('Staff details successfully updated.','appointzilla')."');</script>";
-            } else {
-                echo "<script>alert('".__('Staff details successfully updated.','appointzilla')."');</script>";
-            }
+        if($wpdb->query($update_staff)) {
+            echo "<script>alert('".__('Staff details successfully updated.','appointzilla')."');</script>";
+        } else {
+            echo "<script>alert('".__('Staff details was not updated.','appointzilla')."');</script>";
         }
-
-
-        $LastUpdetedStaffId = $staffupdateid;
         //search n delete this staff id from all service
-        $AllService = $wpdb->get_results("SELECT `id`, `name`, `staff_id` FROM `$ServiceTable`");
-        if($AllService) {
-            foreach($AllService as $Service) {
-                $StaffIds = unserialize($Service->staff_id);
-                if(is_array($StaffIds)) {
-                    $index = array_search($LastUpdetedStaffId, $StaffIds);
-                    unset($StaffIds[$index]);
-                    $StaffIds = serialize($StaffIds);
-                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$StaffIds' WHERE `id` = '$Service->id'");
+        foreach($_POST[service] as $serviceID){
+            $tempService = $wpdb->get_row("SELECT `id`, `name`, `staff_id` FROM `$ServiceTable` WHERE id = $serviceID",ARRAY_A);
+            if($tempService) {
+                $StaffIDArray = unserialize($tempService[staff_id]);
+                if(is_array($StaffIDArray) && array_search($staffupdateid, $StaffIDArray)===false) {
+                    $StaffIDArray[] = $staffupdateid;
+                    $staffIDstring = serialize($StaffIDArray);
+                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$staffIDstring' WHERE `id` = ".$tempService[id]);
+                }
+                else if (!is_array($StaffIDArray)){
+                    $staffIDstring = serialize(array($staffupdateid));
+                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$staffIDstring' WHERE `id` = ".$tempService[id]);
                 }
             }
-        }
-
-        // now assign this staff id in selected service
-        $SeletedSerivcesIds = $_POST['service'];
-        foreach($SeletedSerivcesIds as $SingleServiceID) {
-            $ServiceData = $wpdb->get_row("SELECT * FROM `$ServiceTable` WHERE `id` = '$SingleServiceID' ");
-            $ServiceStaffIds = unserialize($ServiceData->staff_id);
-            if(is_array($ServiceStaffIds)) {
-                array_push($ServiceStaffIds, $LastUpdetedStaffId);
-                $ServiceData = serialize($ServiceStaffIds);
-            } else {
-                $ServiceData = serialize($ServiceStaffIds);
-            }
-            $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$ServiceData' WHERE `id` = '$SingleServiceID'");
         }
         echo "<script>location.href='?page=manage-staff&viewid=$staffupdateid';</script>";
     } ?>
