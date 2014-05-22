@@ -147,14 +147,8 @@ if(!class_exists("Appointzilla")) {
             $AppointmentDay = date("l", strtotime($AppointmentDate));
 
             //get service details
-            $ServiceTableName = $wpdb->prefix."ap_services";
-            $FindService_sql = "SELECT `name`, `duration`, `paddingtime` FROM `$ServiceTableName` WHERE `id` = '$ServiceId'";
-            $ServiceData = $wpdb->get_row($FindService_sql, OBJECT);
-            $ServiceDuration = $ServiceData->duration;
-            $ServicePaddingTime = $ServiceData->paddingtime;
-
-            //Add Padding Time
-            //$ServiceDuration = $ServiceData->duration + $ServiceData->paddingtime;
+            $ServiceDuration = 60;
+            $ServicePaddingTime = 10;
 
             //get staff details
             $StaffTableName = $wpdb->prefix."ap_staff";
@@ -166,7 +160,7 @@ if(!class_exists("Appointzilla")) {
 
             //All Time slot According to Staff hours and business hours
             for( $i = $start; $i < $end; $i += (60*5)) {
-                $AllSlotTimesList[] = date('h:i A', $i);
+                $AllSlotTimesList[] = date('H:i', $i);
             }
 
             //Fetch All today's non recurring appointments and calculate disable slots
@@ -175,17 +169,17 @@ if(!class_exists("Appointzilla")) {
             $AllAppointmentsData = $wpdb->get_results($AllAppointments_sql);
             if($AllAppointmentsData) {
                 foreach($AllAppointmentsData as $Appointment) {
-                    $AppStartTimes[] = date('h:i A', strtotime( $Appointment->start_time ) );
+                    $AppStartTimes[] = date('H:i', strtotime( $Appointment->start_time ) );
 
-                    $Appointment->end_time = date("h:i A", strtotime("+$ServicePaddingTime minutes", strtotime($Appointment->end_time)));
-                    $AppEndTimes[] = date('h:i A', strtotime( $Appointment->end_time ) );
+                    $Appointment->end_time = date("H:i", strtotime("+$ServicePaddingTime minutes", strtotime($Appointment->end_time)));
+                    $AppEndTimes[] = date('H:i', strtotime( $Appointment->end_time ) );
 
                     //now calculate 5min slots between appointment's start_time & end_time
                     $start_et = strtotime($Appointment->start_time);
                     $end_et = strtotime($Appointment->end_time);
                     //make 15-10=5min slot
                     for( $i = $start_et; $i < $end_et; $i += (60*(5))) {
-                        $AppBetweenTimes[] = date('h:i A', $i);
+                        $AppBetweenTimes[] = date('H:i', $i);
                     }
                 }
 
@@ -197,13 +191,13 @@ if(!class_exists("Appointzilla")) {
                         $event_length1 = ($ServiceDuration + $ServicePaddingTime)-$SlotTimes;   // 60min Service duration time - 15 slot time
                         $timestamp1 = strtotime("$time1");
                         $endtime1 = strtotime("-$event_length1 minutes", $timestamp1);
-                        $next_time1 = date('h:i A', $endtime1);
+                        $next_time1 = date('H:i', $endtime1);
                         //calculate previous time
                         $start1 = strtotime($next_time1);
                         $end1 = strtotime($single);
                         //making 5min diff slot
                         for( $i = $start1; $i <= $end1; $i += (60*(5))) {
-                            $AppPreviousTimes[] = date('h:i A', $i);
+                            $AppPreviousTimes[] = date('H:i', $i);
                         }
                     }
                 }//end of foreach - //end calculating Next & Previous time of booked appointments
@@ -216,15 +210,15 @@ if(!class_exists("Appointzilla")) {
             $AllRecurringsAppointmentsData = $wpdb->get_results($AllRecurringsAppointments_sql, OBJECT);
             if($AllRecurringsAppointmentsData) {
                 foreach($AllRecurringsAppointmentsData as $booked) {
-                    $RecurAppStartTime[] = date('h:i A', strtotime( $booked->start_time ) );
+                    $RecurAppStartTime[] = date('H:i', strtotime( $booked->start_time ) );
 
                     //now calculate 5min slots between appointment's start_time & end_time
                     $start_et = strtotime($booked->start_time);
-                    $booked->end_time = date("h:i A", strtotime("+$ServicePaddingTime minutes", strtotime($booked->end_time)));
+                    $booked->end_time = date("H:i", strtotime("+$ServicePaddingTime minutes", strtotime($booked->end_time)));
                     $end_et = strtotime($booked->end_time);
                     //make 15-10=5min slot
                     for( $i = $start_et; $i < $end_et; $i += (60*(5))) {
-                        $AppBetweenTimes[] = date('h:i A', $i);
+                        $AppBetweenTimes[] = date('H:i', $i);
                     }
                 }
 
@@ -236,14 +230,14 @@ if(!class_exists("Appointzilla")) {
                         $event_length1 = ($ServiceDuration + $ServicePaddingTime) - $SlotTimes; //(30 duration + 10 padding time) - 5 slot time
                         $timestamp1 = strtotime("$time1");
                         $endtime1 = strtotime("-$event_length1 minutes", $timestamp1);
-                        $next_time1 = date('h:i A', $endtime1);
+                        $next_time1 = date('H:i', $endtime1);
 
                         //calculate StartTime-previousTime between slots (start-end time)
                         $start1 = strtotime($next_time1);
                         $end1 = strtotime($single);
                         //making 5min diff slot
                         for( $i = $start1; $i <= $end1; $i += (60*(5))) {
-                            $AppPreviousTimes[] = date('h:i A', $i);
+                            $AppPreviousTimes[] = date('H:i', $i);
                         }
 
                         //calculate EndTime-NextTime between slots (start-end time)
@@ -251,7 +245,7 @@ if(!class_exists("Appointzilla")) {
                         $end = strtotime($next_time1);
                         //making 5min difference slot
                         for( $i = $start; $i <= $end; $i += (60*(5))) {
-                            $AppNextTimes[] = date('h:i A', $i);
+                            $AppNextTimes[] = date('H:i', $i);
                         }
                     }
                 }// end of foreach calculating Next & Previous
@@ -287,16 +281,16 @@ if(!class_exists("Appointzilla")) {
                                 $end = strtotime($end);
                                 //making 5min difference slot
                                 for( $i = $start; $i <= $end; $i += (60*(5))) {
-                                    $AppPreviousTimes[] = date('h:i A', $i);
+                                    $AppPreviousTimes[] = date('H:i', $i);
                                 }
 
                                 //now calculate 5min slots between appointment's start_time & end_time
                                 $start_et = strtotime($RAppointment->start_time);
-                                $RAppointment->end_time = date("h:i A", strtotime("+$ServicePaddingTime minutes", strtotime($RAppointment->end_time)));
+                                $RAppointment->end_time = date("H:i", strtotime("+$ServicePaddingTime minutes", strtotime($RAppointment->end_time)));
                                 $end_et = strtotime($RAppointment->end_time);
                                 //make 15-10=5min slot
                                 for( $i = $start_et; $i < $end_et; $i += (60*(5))) {
-                                    $AppBetweenTimes[] = date('h:i A', $i);
+                                    $AppBetweenTimes[] = date('H:i', $i);
                                 }
                             }//end of in array if
                         }
@@ -326,22 +320,22 @@ if(!class_exists("Appointzilla")) {
                     if(in_array($AppointmentDate, $AllMonthlyDates)) {
                         //calculate previous time (Monthly recurring start time to back serviceduration-5)
                         $MinusTime = ($ServiceDuration +  $ServicePaddingTime) - 5;
-                        $start = date('h:i A', strtotime("-$MinusTime minutes", strtotime($RAppointment->start_time)));
+                        $start = date('H:i', strtotime("-$MinusTime minutes", strtotime($RAppointment->start_time)));
                         $start = strtotime($start);
                         $end =  $RAppointment->start_time;
                         $end = strtotime($end);
                         //making 5min difference slot
                         for( $i = $start; $i <= $end; $i += (60*(5))) {
-                            $AppPreviousTimes[] = date('h:i A', $i);
+                            $AppPreviousTimes[] = date('H:i', $i);
                         }
 
                         //now calculate 5min slots between appointment's start_time & end_time
                         $start_et = strtotime($RAppointment->start_time);
-                        $RAppointment->end_time = date("h:i A", strtotime("+$ServicePaddingTime minutes", strtotime($RAppointment->end_time)));
+                        $RAppointment->end_time = date("H:i", strtotime("+$ServicePaddingTime minutes", strtotime($RAppointment->end_time)));
                         $end_et = strtotime($RAppointment->end_time);
                         //make 15-10=5min slot
                         for( $i = $start_et; $i < $end_et; $i += (60*(5))) {
-                            $AppBetweenTimes[] = date('h:i A', $i);
+                            $AppBetweenTimes[] = date('H:i', $i);
                         }
                     }//end of in array if
                 }// end of foreach RAppointments
@@ -359,22 +353,21 @@ if(!class_exists("Appointzilla")) {
                         if(in_array($StaffId, $StaffIds)) {
                             //calculate previous time (event start time to back serviceduration-5)
                             $MinusTime = ($ServiceDuration + $ServicePaddingTime) - 5;
-                            $start = date('h:i A', strtotime("-$MinusTime minutes", strtotime($Event->start_time)));
+                            $start = date('H:i', strtotime("-$MinusTime minutes", strtotime($Event->start_time)));
                             $start = strtotime($start);
                             $end =  $Event->start_time;
                             $end = strtotime($end);
                             //making 5min difference slot
                             for( $i = $start; $i <= $end; $i += (60*(5))) {
-                                $EventPreviousTimes[] = date('h:i A', $i);
+                                $EventPreviousTimes[] = date('H:i', $i);
                             }
 
                             //calculating between time (start - end)
                             $start_et = strtotime($Event->start_time);
-                            //$Event->end_time = date("h:i A", strtotime("+$ServicePaddingTime minutes", strtotime($Event->end_time)));
                             $end_et = strtotime($Event->end_time);
                             //making 5min slot
                             for( $i = $start_et; $i < $end_et; $i += (60*(5))) {
-                                $EventBetweenTimes[] = date('h:i A', $i);
+                                $EventBetweenTimes[] = date('H:i', $i);
                             }
                         }
                     }
@@ -406,13 +399,13 @@ if(!class_exists("Appointzilla")) {
                             if(in_array($AppointmentDate, $AllEventWeelylyDates)) {
                                 //calculate previous time (event start time to back serviceduration-5)
                                 $MinusTime = ($ServiceDuration + $ServicePaddingTime) - 5;
-                                $start = date('h:i A', strtotime("-$MinusTime minutes", strtotime($Event->start_time)));
+                                $start = date('H:i', strtotime("-$MinusTime minutes", strtotime($Event->start_time)));
                                 $start = strtotime($start);
                                 $end =  $Event->start_time;
                                 $end = strtotime($end);
                                 //making 5min difference slot
                                 for( $i = $start; $i <= $end; $i += (60*(5))) {
-                                    $EventPreviousTimes[] = date('h:i A', $i);
+                                    $EventPreviousTimes[] = date('H:i', $i);
                                 }
 
                                 //calculating between time (start - end)
@@ -420,7 +413,7 @@ if(!class_exists("Appointzilla")) {
                                 $end_et = strtotime($Event->end_time);
                                 //making 5min slot
                                 for( $i = $start_et; $i < $end_et; $i += (60*(5))) {
-                                    $EventBetweenTimes[] = date('h:i A', $i);
+                                    $EventBetweenTimes[] = date('H:i', $i);
                                 }
                             }
                         }
@@ -455,13 +448,13 @@ if(!class_exists("Appointzilla")) {
                                 //calculate previous time (event start time to back serviceduration-5)
                                 $MinusTime = ($ServiceDuration + $ServicePaddingTime);
                                 $Event->start_time;
-                                $start = date('h:i A', strtotime("-$MinusTime minutes", strtotime($Event->start_time)));
+                                $start = date('H:i', strtotime("-$MinusTime minutes", strtotime($Event->start_time)));
                                 $start = strtotime($start);
                                 $end =  $Event->start_time;
                                 $end = strtotime($end);
                                 //making 5min difference slot
                                 for( $i = $start; $i <= $end; $i += (60*(5))) {
-                                    $EventPreviousTimes[] = date('h:i A', $i);
+                                    $EventPreviousTimes[] = date('H:i', $i);
                                 }
 
                                 //calculating between time (start - end)
@@ -469,7 +462,7 @@ if(!class_exists("Appointzilla")) {
                                 $end_et = strtotime($Event->end_time);
                                 //making 5min slot
                                 for( $i = $start_et; $i < $end_et; $i += (60*(5))) {
-                                    $EventBetweenTimes[] = date('h:i A', $i);
+                                    $EventBetweenTimes[] = date('H:i', $i);
                                 }
                             }
                         }
@@ -500,13 +493,13 @@ if(!class_exists("Appointzilla")) {
                         if(in_array($AppointmentDate, $AllEventMonthlyDates)) {
                             //calculate previous time (event start time to back serviceduration-5)
                             $MinusTime = ($ServiceDuration + $ServicePaddingTime) - 5;
-                            $start = date('h:i A', strtotime("-$MinusTime minutes", strtotime($Event->start_time)));
+                            $start = date('H:i', strtotime("-$MinusTime minutes", strtotime($Event->start_time)));
                             $start = strtotime($start);
                             $end =  $Event->start_time;
                             $end = strtotime($end);
                             //making 5min difference slot
                             for( $i = $start; $i <= $end; $i += (60*(5))) {
-                                $EventPreviousTimes[] = date('h:i A', $i);
+                                $EventPreviousTimes[] = date('H:i', $i);
                             }
 
                             //calculating between time (start - end)
@@ -514,7 +507,7 @@ if(!class_exists("Appointzilla")) {
                             $end_et = strtotime($Event->end_time);
                             //making 5min difference slot
                             for( $i = $start_et; $i < $end_et; $i += (60*(5))) {
-                                $EventBetweenTimes[] = date('h:i A', $i);
+                                $EventBetweenTimes[] = date('H:i', $i);
                             }
                         }
                     }
@@ -524,13 +517,13 @@ if(!class_exists("Appointzilla")) {
             // Disable those last time slots which are not cover service time like(if 5:00 PM, 5:00 PM - ($ServiceDuration-5 minutes) )
             $MinusTime = ($ServiceDuration + $ServicePaddingTime) - 5;
             $start = $Biz_end_time;
-            $start = date('h:i A', strtotime("-$MinusTime minutes", strtotime($start)));
+            $start = date('H:i', strtotime("-$MinusTime minutes", strtotime($start)));
             $start = strtotime($start);
             $end =  $Biz_end_time;
             $end = strtotime($end);
             //making 5min difference slot
             for( $i = $start; $i <= $end; $i += (60*(5))) {
-                $DisableSlotsTimes[] = date('h:i A', $i);
+                $DisableSlotsTimes[] = date('H:i', $i);
             }
 
             $DisableSlotsTimes = array_merge($DisableSlotsTimes, $AppPreviousTimes, $AppBetweenTimes, $EventPreviousTimes, $EventBetweenTimes, $EventNextTimes);
@@ -542,6 +535,61 @@ if(!class_exists("Appointzilla")) {
             unset($EventNextTimes);
             unset($AllSlotTimesList);
             return $DisableSlotsTimes;
+        }
+
+        function isCurrentDateActive($staffID,$date)
+        {
+            global $wpdb;
+            $EventTable = $wpdb->prefix."ap_events";
+            $FindAllEvents = "SELECT * FROM `$EventTable` ORDER BY `start_date` DESC";
+            $AllEvents = $wpdb->get_results($FindAllEvents, ARRAY_A);
+            foreach($AllEvents as $singleEvent){
+                $staffIDs = unserialize($singleEvent[staff_id]);
+                $eventStart = DateTime::createFromFormat('Y-m-d', $singleEvent[start_date]);
+                $eventEnd = DateTime::createFromFormat('Y-m-d', $singleEvent[end_date]);
+                $thisDate = DateTime::createFromFormat('d-m-Y', $date);
+                if ($singleEvent[repeat]=='N'){
+                    if (in_array($staffID,$staffIDs)==true && $eventStart>=$thisDate && $eventEnd<=$thisDate && $singleEvent[allday]==1){
+                        return false;
+                    }
+                }
+            }
+            $BusinessHours = $this->GetBusiness($date,$staffID);
+
+            if($BusinessHours['Biz_start_time'] != 'none' && $BusinessHours['Biz_end_time'] != 'none') {
+                $timeSlots = $this->getActiveTimeSlots($staffID, $thisDate->format('Y-m-d'), $BusinessHours['Biz_start_time'], $BusinessHours['Biz_end_time']);
+                if (count($timeSlots)<1)
+                    return false;
+            }
+            return true;
+        }
+        function getActiveTimeSlots($staffID, $date, $startTime, $endTime)
+        {
+            global $wpdb;
+            $timeSlots = array();
+            for($i = strtotime($startTime); $i<strtotime($endTime); $i += 1800){
+                $timeSlots[] =  $i;
+            }
+            $AppointmentTableName = $wpdb->prefix."ap_appointments";
+            $AllAppointmentsData = $wpdb->get_results("SELECT * FROM `$AppointmentTableName` WHERE `staff_id` = '$staffID' AND `date` = '$date' AND `recurring` LIKE 'no' AND `status` != 'cancelled' ");
+            foreach($AllAppointmentsData as $Appointment) {
+                foreach($timeSlots as $key=>$singleTime) {
+                    if ($singleTime>=strtotime( $Appointment->start_time ) && $singleTime<=strtotime( $Appointment->end_time )){
+                        unset($timeSlots[$key]);
+                    }
+                }
+            }
+            $EventTableName = $wpdb->prefix."ap_events";
+            $EventsData = $wpdb->get_results("SELECT * FROM `$EventTableName` WHERE str_to_date('$date','%Y-%m-%d') BETWEEN str_to_date(`start_date`,'%Y-%m-%d') AND str_to_date(`end_date`,'%Y-%m-%d')",ARRAY_A);
+            foreach($EventsData as $event) {
+                $staffIDs = unserialize($event[staff_id]);
+                foreach($timeSlots as $key=>$singleTime) {
+                   if (($singleTime<strtotime($event[start_time]) || $singleTime>=strtotime($event[end_time])) && in_array($staffID,$staffIDs)==true){
+                        unset($timeSlots[$key]);
+                    }
+                }
+            }
+            return $timeSlots;
         }
     }
 }

@@ -18,15 +18,12 @@ function appointment_calendar_shortcode() {
     //disable closed business days on small datepicker
     global $wpdb;
     $ClosedDays = array();
-    /*$BusinessHoursTable = $wpdb->prefix . "ap_business_hours";
-    $ClosedBusinessDays = $wpdb->get_results("SELECT * FROM `$BusinessHoursTable` WHERE `close` LIKE 'yes'");
-    if(count($ClosedBusinessDays)) {
-        foreach($ClosedBusinessDays as $ClosedBusinessDay) {
-            $ClosedDays[] = ucfirst(substr($ClosedBusinessDay->day, 0, 3));
-        }
-    }*/
 
     require_once( plugin_dir_path( __FILE__ ) . 'calendar/tc_calendar.php');
+    // include appointzilla class file
+    require_once('appointzilla-class.php');
+
+    $AppointZilla = new Appointzilla();
     $CurrentDate = date("Y-m-d", time());
 
     $DatePicker2 = plugins_url('calendar/', __FILE__);
@@ -46,7 +43,7 @@ function appointment_calendar_shortcode() {
     $DateFormat = get_option('apcal_date_format');
     if($DateFormat == '') $DateFormat = "d-m-Y";
     $TimeFormat = get_option('apcal_time_format');
-    if($TimeFormat == '') $TimeFormat = "h:i";
+    if($TimeFormat == '') $TimeFormat = "H:i";
 
     global $wpdb;
     $AppointmentTableName = $wpdb->prefix . "ap_appointments";
@@ -190,7 +187,24 @@ function appointment_calendar_shortcode() {
                         jQuery('#appdate').val(appdate);
                         jQuery('#appdate2').val(appdate2);
                         jQuery('#AppFirstModal').show();
+                        jQuery("#datepicker").datepicker("setDate", appdate);
 
+                        var dayOfWeek = jQuery('#datepicker').datepicker('getDate').getUTCDay();
+                        jQuery('#loading-staff').show();
+                        jQuery.ajax({
+                            dataType : 'html',
+                            type: 'GET',
+                            url : location.href,
+                            cache: false,
+                            data : 'selectedDate='+appdate+'&dayOfWeek='+dayOfWeek,
+                            complete : function() {  },
+                            success: function(data) {
+                                jQuery('#loading-staff').hide();
+                                data = jQuery(data).find('div#tempStaffList');
+                                jQuery('#stfflistdiv').html(data);
+                                jQuery('#stafflist').bind('change',function() { staffChanged() });
+                            }
+                        });
                         // date-picker tweaks
                         var i;
                         var startdate = jQuery.datepicker.formatDate('yymm', new Date(start));
@@ -436,6 +450,39 @@ function appointment_calendar_shortcode() {
                 ]
         });
 
+        jQuery("#datepicker").datepicker({
+            inline: true,
+            minDate: 0,
+            altField: '#alternate',
+            dateFormat:'dd-mm-yy',
+            dayNames:['Пон','Вт','Ср',"Чтв",'Пят','Суб','Вос'],
+            firstDay: <?php if($AllCalendarSettings['calendar_start_day']) echo $AllCalendarSettings['calendar_start_day']; else echo "0";  ?>,
+            beforeShowDay: function(date) {
+                var day = date.getDay();
+                return [(day != 0), ''];
+            },
+            onSelect: function(dateText, inst) {
+                var dayOfWeek = jQuery(this).datepicker('getDate').getUTCDay();
+                jQuery('#appdate').val(dateText);
+                jQuery('#loading-staff').show();
+                jQuery.ajax({
+                    dataType : 'html',
+                    type: 'GET',
+                    url : location.href,
+                    cache: false,
+                    data : 'selectedDate='+dateText+'&dayOfWeek='+dayOfWeek,
+                    complete : function() {  },
+                    success: function(data) {
+                        jQuery('#loading-staff').hide();
+                        data = jQuery(data).find('div#tempStaffList');
+                        jQuery('#stfflistdiv').html(data);
+                        jQuery('#stafflist').bind('change',function() { staffChanged() });
+                    }
+                });
+            }
+        });
+
+
         //Modal Form Works
         //show first modal
         jQuery('#addappointment').click(function(){
@@ -453,9 +500,9 @@ function appointment_calendar_shortcode() {
         //AppFirstModal Validation
         jQuery('#next1').click(function(){
             jQuery(".error").hide();
-            if(jQuery('#service').val() == 0)
+            if(jQuery('#stafflist').val() == 0)
             {
-                jQuery("#service").after("<span class='error'><br><strong><?php _e('Select Any Service.', 'appointzilla'); ?></strong><br></span>");
+                jQuery("#stafflist").after("<span class='error'><br><strong><?php _e('Select Staff.', 'appointzilla'); ?></strong><br></span>");
                 return false;
             }
         });
@@ -467,16 +514,17 @@ function appointment_calendar_shortcode() {
         });
 
     });
-
+   jQuery.datepicker.formatDate("<?php echo $DPFormat; ?>", new Date());
     //Modal Form Works
     function LoadSecondModal() {
-        var ServiceId = jQuery('#servicelist').val();
-        var AppDate = jQuery('#appdate2').val();
+        var AppDate = jQuery('#appdate').val();
         var StaffId = jQuery('#stafflist').val();
         var CabinetId = jQuery('#cabinetlist').val();
-        var SecondData = "ServiceId=" + ServiceId + "&AppDate=" + AppDate + "&StaffId=" + StaffId+"&CabinetId=" + CabinetId;
+        var SecondData = "AppDate=" + AppDate + "&StaffId=" + StaffId+"&CabinetID=" + CabinetId;
         jQuery('#loading1').show(); // loading button onclick next1 at first modal
         jQuery('#next1').hide();    //hide next button
+        jQuery('#stfflistdiv').html('');
+        jQuery('#cabinet').html('');
         jQuery.ajax({
             dataType : 'html',
             type: 'GET',
@@ -499,6 +547,8 @@ function appointment_calendar_shortcode() {
         jQuery('#AppSecondModal').hide()
         jQuery('#AppFirstModal').show();
         jQuery('#next1').show();
+        jQuery('#stfflistdiv').html('');
+        jQuery('#cabinet').html('');
     }
 
     //load second modal on back2 click
@@ -508,25 +558,10 @@ function appointment_calendar_shortcode() {
         jQuery('#AppSecondModal').show();
     }
 
-   //on new user button click
-   function NewUserBtn() {
-        jQuery('#new-user-div').show();
-        jQuery('#existing-user-div').hide();
-       jQuery('#check-email-result-div').hide();
-   }
-
-   //on existing user button click
-   function ExistingUserBtn() {
-       jQuery('#new-user-div').hide();
-       jQuery('#existing-user-div').show();
-       jQuery('#check-email-div-form').show();
-   }
-
    //load third modal on-click next2
    function LoadThirdModal() {
        //validation on second modal form
        jQuery('.error').hide();
-       var ServiceId = jQuery('#ServiceId').val();
        var AppDate = jQuery('#AppDate').val();
        var StaffId = jQuery('#StaffId').val();
        var Start_Time = jQuery('input[name=start_time]:radio:checked').val();
@@ -534,7 +569,7 @@ function appointment_calendar_shortcode() {
            jQuery("#time_slot_box").after("<span style='width:auto; margin-left:5%;' class='error'><strong><?php _e('Select any time.', 'appointzilla'); ?></strong></span>");
            return false;
        }
-       var ThirdData = "ServiceId=" + ServiceId + "&AppDate=" + AppDate + "&StaffId=" + StaffId + "&StartTime=" + Start_Time ;
+       var ThirdData = "AppDate=" + AppDate + "&StaffId=" + StaffId + "&CabinetID=" + jQuery('#CabinetID').val() + "&StartTime=" + Start_Time ;
        jQuery('#buttondiv').hide();
        jQuery('#loading').show();
        jQuery.ajax({
@@ -555,15 +590,30 @@ function appointment_calendar_shortcode() {
    }
 
 
+    //on existing user button click
+    function ExistingUserBtn() {
+        jQuery('#new-user-div').hide();
+        jQuery('#existing-user-div').show();
+        jQuery('#check-email-div-form').show();
+    }
+
+
+    //on new user button click
+    function NewUserBtn() {
+        jQuery('#new-user-div').show();
+        jQuery('#existing-user-div').hide();
+        jQuery('#check-email-result-div').hide();
+    }
+
    //load forth final modal for confirm appointment
    function CheckValidation(UserType,e) {
 
        jQuery('.error').hide();
-       var ServiceId = jQuery('#ServiceId').val();
        var AppDate = jQuery('#AppDate').val();
        var StaffId = jQuery('#StaffId').val();
-       var CabinetId = jQuery('#cabinetlist').val();
+       var CabinetId = jQuery('#CabinetID').val();
        var StartTime =  jQuery('#StartTime').val();
+       var EndTime =  jQuery('#EndTime').val();
 
        /**
         * new user booking case
@@ -576,13 +626,6 @@ function appointment_calendar_shortcode() {
            var ClientOccupation = jQuery(".client-occupation").val();
            var ClientAddress = jQuery(".client-address").val();
            var ClientSi = jQuery(".client-si").val();
-
-           //client email
-           /*var regex = /^([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-           if (ClientEmail == "") {
-               jQuery(".client-email").after("<span class='error'>&nbsp;<br><strong><?php _e('Email required.', 'appointzilla'); ?></strong></span>");
-               return false;
-           }*/
 
            //client first name
            if (ClientFirstName == "") {
@@ -630,7 +673,7 @@ function appointment_calendar_shortcode() {
                }
            }
 
-           var PostData1 = "Action=BookAppointment"+ "&ServiceId=" + ServiceId + "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime;
+           var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime="+EndTime;
            var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientLastName=" + ClientLastName + "&ClientPhone=" + ClientPhone + "&ClientEmail=" + ClientEmail + "&ClientNote=" + ClientSi + "&ClientOccupation=" + ClientOccupation + "&ClientAddress =" + ClientAddress;
            var PostData = PostData1 +  PostData3;
 
@@ -670,7 +713,7 @@ function appointment_calendar_shortcode() {
                return false;
            }
 
-           var PostData1 = "Action=BookAppointment"+ "&ServiceId=" + ServiceId + "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime;
+           var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime=" + EndTime;
            var PostData2 = "&UserType=" + UserType + "&ClientEmail=" + ClientEmail;
            var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientPhone=" + ClientPhone;
            var PostData = PostData1 + PostData2 + PostData3;
@@ -845,6 +888,39 @@ function appointment_calendar_shortcode() {
         jQuery('#show-redirecting-msg').show();
         jQuery('#paybuttondiv').hide();
     }
+
+    function staffChanged()
+    {
+        var StaffId = jQuery("select#stafflist").val();
+        if(StaffId > 0) {
+            jQuery('#loading-staff').show();
+            jQuery('#cabinet').hide();
+            jQuery.ajax({
+                dataType : 'html',
+                type: 'GET',
+                url : location.href,
+                data : "StaffId=" + StaffId,
+                complete : function() { },
+                success: function(data) {
+                    data=jQuery(data).find('div#cabinetlistdiv');
+                    jQuery('#cabinet').show();
+                    jQuery('#loading-staff').hide();
+                    jQuery('#cabinet').html(data);
+                    jQuery('#cabinetlist').bind('change',function() { cabinetChanged() });
+                }
+            });
+        } else {
+            jQuery('#cabinet').hide();
+        }
+    }
+
+    function cabinetChanged()
+    {
+        var cabinetlist = jQuery("select#cabinetlist").val();
+        if(cabinetlist > 0) {
+            jQuery('.secondModal_button').show();
+        }
+    }
     </script>
 
     <!---Display Booking Instruction--->
@@ -867,9 +943,10 @@ function appointment_calendar_shortcode() {
         </button>
     </div>
 
+    <div id='messagebox'>
+    </div>
     <!---Show appointment calendar--->
     <div id='calendar'>
-        <div style="text-align: right; font-size: small;">Appointment Calendar Premium Powered By: <a href="http://appointzilla.com/" title="Online Appointment Scheduling Plugin For WordPress" target="_blank">AppointZilla</a></div>
     </div>
 
     <!---AppFirstModal For Schedule New Appointment--->
@@ -880,122 +957,23 @@ function appointment_calendar_shortcode() {
                     <div class="apcal_alert apcal_alert-info">
                         <a href="#" style="float:right; margin-right:4px; margin-top:12px;" id="close"><i class="icon-remove"></i></a>
                         <p><strong><?php _e('Schedule New Appointment', 'appointzilla'); ?></strong></p>
-                        <p><strong><?php _e('Schedule New Appointment', 'appointzilla'); ?></strong></p>
-                        <div><?php _e('Step 1. Select Date & Service', 'appointzilla'); ?></div>
+                        <div><?php _e('Step 1. Select Date & Staff', 'appointzilla'); ?></div>
                     </div>
                 </div>
 
                 <div class="apcal_modal-body">
                     <div id="firdiv" style="float:left; height:210px; width:260px; padding-bottom:30px;">
-                    <!--JS Datepicker -->
-                        <!--<div id="datepicker"></div>-->
-                     <!--PHP Datepicker-->
-                     <?php if($DateFormat == 'd-m-Y') $CalFormat = 'DD-MM-YYYY';
-                        if($DateFormat == 'm-d-Y') $CalFormat = 'MM-DD-YYYY';
-                        if($DateFormat == 'Y-m-d') $CalFormat = 'YYYY-MM-DD'; //coz yy-mm-dd not
-                        $myCalendar->writeScript(); ?>
-                    <script>
-                      function myChanged() {
-                        var x = document.getElementById('date1').value;
-                        var x2 = document.getElementById('date1').value;
-                        x = moment(x).format('<?php echo $CalFormat; ?>');
-                        x2 = moment(x2).format('DD-MM-YYYY');
-                        document.getElementById('appdate').value = x;
-                        document.getElementById('appdate2').value = x2;
-                      }
-                    </script>
+                    <div id="datepicker"></div>
                     </div>
 
                     <div id="secdiv" style="float:right; margin-right:5%; width:40%" >
                         <strong><?php _e('Your Appointment Date:', 'appointzilla'); ?> </strong><br>
                         <input name="appdate" id="appdate" type="text" readonly="" style="height:30px; width:100%; padding-left: 15px;" value="<?php echo date($DateFormat); ?>" /><br>
                         <input name="appdate2" id="appdate2" type="hidden" readonly="" style="height:30px; width:100%" value="<?php echo date("d-m-Y"); ?>" />
-                        <?php global $wpdb;
-                        $CategoryTable = $wpdb->prefix."ap_service_category";
-                        $FindCategorySQL ="SELECT * FROM `$CategoryTable`  order by `name` ASC";
-                        $AllCategory = $wpdb->get_results($FindCategorySQL, OBJECT); ?>
-
-                        <style type="text/css"> .mycss { font-weight:bold; } </style>
                         <div id="stfflistdiv">
-                            <strong><?php _e('Select Staff:', 'appointzilla'); ?></strong><br>
-                            <select name='stafflist' id='stafflist' style="width:100%">
-                                <?php //get all staff id list by service id
-                                $ServiceTable = $wpdb->prefix . "ap_services";
-                                $StaffTable = $wpdb->prefix . "ap_staff";
-                                $StaffList = $wpdb->get_results("SELECT `id`, `name` FROM `$StaffTable`", ARRAY_A);
-                                if(count($StaffList)>0) {
-                                    echo "<option>".__("Select Staff")."</option>";
-                                    foreach($StaffList as $singleStaff) {
-                                        echo "<option value='".$singleStaff['id']."'>&nbsp;&nbsp;".ucwords($singleStaff['name'])."</option>";
-                                    }
-                                } else {
-                                    echo "<option value='1'>".__("No Staff Assigned")."</option>";
-                                }
-                                ?>
-                            </select>
                         </div>
                         <br>
-                        <script type="text/javascript">
-                            //load staff according to service -  start
-                            jQuery('#servicelist').change(function(){
-                                var ServiceId = jQuery("select#servicelist").val();
-                                if(ServiceId > 0) {
-                                    jQuery('#loading-staff').show();
-                                    jQuery('#staff').hide();
-                                    var FirstData = "ServiceId=" + ServiceId;
-                                    jQuery.ajax({
-                                        dataType : 'html',
-                                        type: 'GET',
-                                        url : location.href,
-                                        data : FirstData,
-                                        complete : function() { },
-                                        success: function(data) {
-                                            data=jQuery(data).find('div#stfflistdiv');
-                                            jQuery('#staff').show();
-                                            jQuery('#loading-staff').hide();
-                                            jQuery('#staff').html(data);
-                                            jQuery('#stafflist').bind('change',function() { doWork() });
-                                        }
-                                    });
-                                } else {
-                                    jQuery('#staff').hide();
-                                }
-                            });
-							function doWork()
-                            {
-                                var StaffId = jQuery("select#stafflist").val();
-                                if(StaffId > 0) {
-                                    jQuery('#loading-staff').show();
-                                    jQuery('#cabinet').hide();
-                                    var FirstData = "StaffId=" + StaffId;
-                                    jQuery.ajax({
-                                        dataType : 'html',
-                                        type: 'GET',
-                                        url : location.href,
-                                        data : FirstData,
-                                        complete : function() { },
-                                        success: function(data) {
-                                            data=jQuery(data).find('div#cabinetlistdiv');
-                                            jQuery('#cabinet').show();
-                                            jQuery('#loading-staff').hide();
-                                            jQuery('#cabinet').html(data);
-                                            jQuery('#cabinetlist').bind('change',function() { cabinetChanged() });
-                                        }
-                                    });
-                                } else {
-                                    jQuery('#cabinet').hide();
-                                }
-                            }
-                            function cabinetChanged()
-                            {
-                                var cabinetlist = jQuery("select#cabinetlist").val();
-                                if(cabinetlist > 0) {
-                                    jQuery('.secondModal_button').show();
-                                }
-                            }
-                        </script>
-                    <div id="loading-staff" style="display:none;"><?php _e('Loading...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
-                    <div id="staff"></div>
+                        <div id="loading-staff" style="display:none;"><?php _e('Loading...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
 					<div id="cabinet"></div>
                     </div><!--#secdiv-->
                 </div><!--#modal-body-->
@@ -1011,45 +989,41 @@ function appointment_calendar_shortcode() {
     <!---AppThirdModal For Schedule New Appointment--->
     <div id="AppThirdModal" style="display:none;"></div>
     <!---AppThirdModal For Schedule New Appointment End--->
-    <div id="AppForthModalFinal" style="display:none;">
-
-    </div>
+    <div id="AppForthModalFinal" style="display:none;"></div>
     <!---AppThirdModal For Schedule New Appointment End--->
 
     <!--date-picker js -->
     <script src="<?php echo plugins_url('/menu-pages/datepicker-assets/js/jquery.ui.datepicker.js', __FILE__); ?>" type="text/javascript"></script>
 
-    <!---Loading staff ajax return code--->
-    <?php if(isset($_GET['ServiceId'])) { ?>
-        <!---load bootstrap css--->
-        <div id="stfflistdiv">
+    <?php if (isset($_GET[selectedDate])){?>
+        <div id="tempStaffList">
+        <?php $StaffTable = $wpdb->prefix . "ap_staff";
+        $ReturnStaffList = array();
+        $dayOfWeek = array('monday', 'tuesday',  'wednesday','thursday', 'friday', 'saturday', 'sunday');
+        $StaffList = $wpdb->get_results("SELECT * FROM `$StaffTable`", ARRAY_A);
+        foreach($StaffList as $singleStuff) {
+            $singleStuff[staff_hours] = unserialize($singleStuff[staff_hours]);
+            if (isset($singleStuff[staff_hours][$dayOfWeek[$_GET['dayOfWeek']].'_close'])!==false && $singleStuff[staff_hours][$dayOfWeek[$_GET['dayOfWeek']].'_close']=='no' && $AppointZilla->isCurrentDateActive($singleStuff[id],$_GET[selectedDate])==true){
+                $ReturnStaffList[$singleStuff[id]] = $singleStuff[name];
+            }
+        }
+        ?>
             <strong><?php _e('Select Staff:', 'appointzilla'); ?></strong><br>
             <select name='stafflist' id='stafflist' style="width:100%">
-            <?php //get all staff id list by service id
-            $ServiceID = $_GET['ServiceId'];
-            if($ServiceID) {
-                $ServiceTable = $wpdb->prefix . "ap_services";
-                $StaffTable = $wpdb->prefix . "ap_staff";
-                $AllStaffIdList = $wpdb->get_row("SELECT `staff_id` FROM `$ServiceTable` WHERE `id` = '$ServiceID'", OBJECT);
-                $AllStaffIdList = unserialize($AllStaffIdList->staff_id);
-                if(count($AllStaffIdList)) {
-                    echo "<option>".__("Select Staff")."</option>";
-                    foreach($AllStaffIdList as $StaffId) {
-                        $StaffDetails = $wpdb->get_row("SELECT `id`, `name` FROM `$StaffTable` WHERE `id` = '$StaffId'", OBJECT);
-                        echo "<option value='".$StaffDetails->id."'>&nbsp;&nbsp;".ucwords($StaffDetails->name)."</option>";
-                    }
-                } else {
-                    echo "<option value='1'>".__("No Staff Assigned")."</option>";
+            <?php if(count($ReturnStaffList)) {
+                echo "<option>".__("Select Staff")."</option>";
+                foreach($ReturnStaffList as $staffID=>$singleName) {
+                    echo "<option value='".$staffID."'>".ucwords($singleName)."</option>";
                 }
-            } ?>
+            } else {
+            echo "<option value='1'>".__("No Staff Assigned")."</option>";
+            }?>
             </select>
         </div>
         <?php
-    } ?>
-
-
-	<!---Loading staff ajax return code--->
-    <?php if(isset($_GET['StaffId'])) { ?>
+    }
+    else if(isset($_GET['StaffId']) && !isset($_GET[AppDate])) { ?>
+        <!---Loading staff ajax return code--->
         <div id="cabinetlistdiv">
         <?php
         $StaffID = $_GET['StaffId'];
@@ -1082,30 +1056,25 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
         <br>
         <button type="button" class="apcal_btn secondModal_button" id="next1" style="display: none;" name="next1" onclick="LoadSecondModal()"><?php _e('Next', 'appointzilla'); ?> <i class="icon-arrow-right"></i></button>
         <div id="loading1" style="display:none;"><?php _e('Loading...', 'appointzilla'); ?><img src="<?php echo plugins_url("images/loading.gif", __FILE__); ?>" />
- <?php   } ?>
-
-
-    <!---loading second modal form ajax return code--->
-    <?php require_once('shortcode-time-slot-calculation.php'); ?>
-    <!---loading second modal form ajax return code--->
-
-
-    <!---loading third modal form ajax return code--->
     <?php
-    if( isset($_GET['StartTime']) && isset($_GET['StaffId']) ) { ?>
+    }
+
+    else if( isset($_GET['AppDate']) && isset($_GET['StaffId']) && !isset($_GET['StartTime'])) {?>
+        <!---loading second modal form ajax return code--->
+        <?php require_once('shortcode-time-slot-calculation.php');
+    }
+
+    else if( isset($_GET['StartTime']) && isset($_GET['StaffId']) ) {
+        ?>
         <div id="AppThirdModalData">
             <div class="apcal_modal" id="AppThirdModal" style="z-index:10000;">
-                <input name="ServiceId" id="ServiceId" type="hidden" value="<?php if(isset($_GET['ServiceId'])) { echo $_GET['ServiceId']; } ?>" />
                 <input name="StaffId" id="StaffId" type="hidden" value="<?php if(isset($_GET['StaffId'])) { echo $_GET['StaffId']; } ?>" />
+                <input name="CabinetID" id="CabinetID" type="hidden" value="<?php if(isset($_GET['CabinetID'])) { echo $_GET['CabinetID']; } ?>" />
                 <input name="AppDate" id="AppDate" type="hidden" value="<?php if(isset($_GET['AppDate'])) { echo $_GET['AppDate']; } ?>" />
                 <input name="StartTime" id="StartTime" type="hidden" value="<?php if(isset($_GET['StartTime'])) { echo $_GET['StartTime']; } ?>" />
-                <input name="EndTime" id="EndTime" type="hidden" value="<?php if(isset($_GET['EndTime'])) { echo $_GET['EndTime']; } ?>" />
-                <input name="RecurringType" id="RecurringType" type="hidden" value="<?php if(isset($_GET['RecurringType'])) { echo $_GET['RecurringType']; } ?>" />
-                <input name="RecurringStartDate" id="RecurringStartDate" type="hidden" value="<?php if(isset($_GET['recurring_start_date'])) { echo $_GET['recurring_start_date']; } ?>" />
-                <input name="RecurringEndDate" id="RecurringEndDate" type="hidden" value="<?php if(isset($_GET['recurring_end_date'])) { echo $_GET['recurring_end_date']; } ?>" />
-
+                <input name="EndTime" id="EndTime" type="hidden" value="<?php if(isset($_GET['StartTime'])) { echo date($TimeFormat, strtotime($_GET['StartTime'] . "+1 hour")); } ?>" />
                 <div class="apcal_modal-info">
-                    <a href="" onclick="CloseModelform()" style="float:right; margin-right:40px; margin-top:21px;" id="close" ><i class="icon-remove"></i></a>
+                    <a href="javascript:void(0)" onclick="CloseModelform()" style="float:right; margin-right:40px; margin-top:21px;" id="close" ><i class="icon-remove"></i></a>
                     <div class="apcal_alert apcal_alert-info">
                         <p><strong><?php _e('Schedule New Appointment', 'appointzilla'); ?></strong></p>
                         <?php _e('Step 3. Complete Your Booking', 'appointzilla'); ?>
@@ -1194,7 +1163,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                                     <td>&nbsp;</td>
                                     <td>
                                         <div id="existing-user-form-btn">
-                                            <button type="button" class="apcal_btn apcal_btn-success" id="check-existing-user" name="check-existing-user" onclick="return CheckExistingUser();"><i class="icon-search icon-white"></i> <?php _e('Search Email', 'appointzilla'); ?></button>
+                                            <button type="button" class="apcal_btn apcal_btn-success" id="check-existing-user" name="check-existing-user" onclick="return CheckExistingUser();"><i class="icon-search icon-white"></i> <?php _e('Search', 'appointzilla'); ?></button>
                                         </div>
                                         <div id="existing-user-loading-img" style="display:none;"><?php _e('Searching, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
                                     </td>
@@ -1258,33 +1227,19 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
     <!---saving appointments--->
     <?php if( isset($_POST['Action'])) {
         $Action = $_POST['Action'];
-        $UserType = $_POST['UserType'];
         if($Action == "BookAppointment") {
-            //print_r($_POST); die;
-            $ServiceId = $_POST['ServiceId'];
             $StaffId = $_POST['StaffId'];
             $AppDateNo = $_POST['AppDate'];
             $cabinetID = $_POST['CabinetId'];
 
             $ClientEmail = $_POST['ClientEmail'];
+            $ClientNote = $_POST['ClientNote'];
             $ClientName = sanitize_text_field($_POST['ClientFirstName']).' '.sanitize_text_field($_POST['ClientLastName']);
             $ClientPhone = $_POST['ClientPhone'];
             $AppointmentKey = md5(date("F j, Y, g:i a"));
             $AppDate = date("Y-m-d", strtotime($AppDateNo));
             $StartTime = $_POST['StartTime'];
-
-            //check user registration yes/no
-
-            //fetch service detail calculation EndTime and Service name
-            $ServiceTableName = $wpdb->prefix . "ap_services";
-            $ServiceName = $wpdb->get_row("SELECT * FROM `$ServiceTableName` WHERE `id` = '$ServiceId' ");
-            $ServiceDuration = $ServiceName->duration;
-
-
-            $StartTimeTimestamp = strtotime($StartTime);
-            //calculate end time according to service duration
-            $CalculateTime = strtotime("+$ServiceDuration minutes", $StartTimeTimestamp);
-            $EndTime =  date('h:i A', $CalculateTime );
+            $EndTime = $_POST['EndTime'];
 
             //get cabinet name
             $cabinetTableName = $wpdb->prefix . "ap_cabinets";
@@ -1304,11 +1259,14 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
 
             global $wpdb;
             $AppointmentsTable = $wpdb->prefix ."ap_appointments";
-            $CreateAppointments = "INSERT INTO `$AppointmentsTable` (`id` ,`name` ,`email` ,`service_id` ,`staff_id` ,`cabinet_id` ,`phone` ,`start_time` ,`end_time` ,`date` ,`note` , `appointment_key` ,`status` ,`recurring` ,`recurring_type` ,`recurring_st_date` ,`recurring_ed_date` ,`appointment_by`, `payment_status`) VALUES ('NULL', '$ClientName', '$ClientEmail', '$ServiceId', '$StaffId','$cabinetID', '$ClientPhone', '$StartTime', '$EndTime', '$AppDate', '$ClientNote', '$AppointmentKey', '$Status', '$Recurring', '$RecurringType', '$RecurringStartDate', '$RecurringEndDate', '$AppointmentBy', '$PaymentStatus');";
+            $CreateAppointments = "INSERT INTO `$AppointmentsTable` (`id` ,`name` ,`email` ,`service_id` ,`staff_id` ,`cabinet_id` ,`phone` ,`start_time` ,`end_time` ,`date` ,`note` , `appointment_key` ,`status` ,`recurring` ,`recurring_type` ,`recurring_st_date` ,`recurring_ed_date` ,`appointment_by`, `payment_status`) VALUES ('NULL', '$ClientName', '$ClientEmail', '0', '$StaffId','$cabinetID', '$ClientPhone', '$StartTime', '$EndTime', '$AppDate', '$ClientNote', '$AppointmentKey', '$Status', '$Recurring', '$RecurringType', '$RecurringStartDate', '$RecurringEndDate', '$AppointmentBy', '$PaymentStatus');";
+
             if($wpdb->query($CreateAppointments)) {
                 $LastAppointmentId = mysql_insert_id(); ?>
                 <div id="AppForthModalData">
                 <?php global $wpdb;
+
+
                 $ClientTable = $wpdb->prefix."ap_clients";
                 $ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `email` = '$ClientEmail' OR (`name` like '%$ClientName%' AND `phone` like '$ClientPhone')");
 				if(count($ExistClientDetails)) {
@@ -1321,7 +1279,8 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                     if($wpdb->query($InsertClient)) {
                         $LastClientId = mysql_insert_id();
                     }
-                } ?>
+                }?>
+
 
                 <div class="apcal_modal" id="AppForthModal" style="z-index:10000;">
                 <div class="apcal_modal-info">
@@ -1329,7 +1288,6 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                     <div class="apcal_alert apcal_alert-info">
                         <p><?php _e('Thank You. Your appointment has been scheduled.', 'appointzilla'); ?></p>
                 </div><!--end modal-info-->
-
                 <div class="apcal_modal-body">
                     <style>
                         .table th, .table td {
@@ -1355,11 +1313,6 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                             <td width="73%"><?php echo $ClientPhone;  ?></td>
                         </tr>
                         <tr>
-                            <th width="26%" scope="row"><?php _e('Service', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%"><?php	echo ucwords($ServiceName->name);  ?></td>
-                        </tr>
-                        <tr>
                             <th width="26%" scope="row"><?php _e('Staff', 'appointzilla'); ?></th>
                             <td width="1%"><strong>:</strong></td>
                             <td width="73%">
@@ -1380,10 +1333,9 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                             <td width="73%"><?php echo date($DateFormat, strtotime($AppDate));	?></td>
                         </tr>
                         <tr>
-                            <?php if($TimeFormat == "h:i") $InfoTimeFormat = "h:i A"; else $InfoTimeFormat = "H:i"; ?>
                             <th width="26%" scope="row"><?php _e('Time', 'appointzilla'); ?></th>
                             <td width="1%"><strong>:</strong></td>
-                            <td width="73%"><?php echo date($InfoTimeFormat, strtotime($StartTime))." - ".date($InfoTimeFormat, strtotime($EndTime));  ?></td>
+                            <td width="73%"><?php echo date($TimeFormat, strtotime($StartTime))." - ".date($TimeFormat, strtotime($EndTime));  ?></td>
                         </tr>
                         <tr>
                             <th width="26%" scope="row"><?php _e('Status', 'appointzilla'); ?></th>
@@ -1475,7 +1427,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
 
                                 // send notification if any of check == 1
                                 if($Check1 || $Check2 || $Check3) { ?>
-                                    <button type="submit" class="apcal_btn apcal_btn" onclick="CloseModelform()" style="margin-left:80%"><i class="icon-ok"></i> <?php _e('Done', 'appointzilla'); ?></button>
+                                    <a href="javascript:void(0)" class="apcal_btn apcal_btn" onclick="CloseModelform()" style="margin-left:80%"><i class="icon-ok"></i> <?php _e('Done', 'appointzilla'); ?></a>
                                     <?php $BlogName =  get_bloginfo('name');
                                     if($LastAppointmentId && $LastClientId) {
                                         $AppId = $LastAppointmentId;
@@ -1643,7 +1595,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
             <div class="apcal_modal" id="AppForthModal" style="z-index:10000;">
                 <div class="apcal_modal-info">
                     <div style="float:right; margin-top:5px; margin-right:10px;">
-                        <div align="center"><a href="" onclick="CloseModelform()" id="close" ><i class="icon-remove"></i></a></div>
+                        <div align="center"><a href="javascript:void(0)" onclick="CloseModelform()" id="close" ><i class="icon-remove"></i></a></div>
                     </div>
                     <div class="apcal_alert apcal_alert-info">
                         <h4 ><?php _e('Payment Successfully Processed', 'appointzilla'); ?></h4>
@@ -1769,13 +1721,12 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
             $client_table = $wpdb->prefix . "ap_clients";
 			//Search Client
 			$client_list = $wpdb->get_results("SELECT * FROM `$client_table` WHERE `name` LIKE '%$ClientEmail%' OR email LIKE '$ClientEmail'",ARRAY_A);
-			echo $wpdb->last_query;
 			if (count($client_list)>=1){?>
-			<tr>
+			    <tr>
 					<th><?php _e('Name', 'appointzilla'); ?></th>
 					<th><?php _e('Phone', 'appointzilla'); ?></th>
 					<th><?php _e('Email', 'appointzilla'); ?></th>
-					<th><?php _e('Address', 'appointzilla'); ?></th>
+					<th><?php _e('Occupation', 'appointzilla'); ?></th>
 					<th><?php _e('Action', 'appointzilla'); ?></th>
 				</tr>
 			<?php foreach($client_list as $single_client):?>
@@ -1785,18 +1736,17 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
 						<input name="ex-client-name" type="text" class="ex-client-name" style="height:30px;" value="<?php echo $single_client['name']; ?>" readonly="" /></td>
 					<td><input name="ex-client-phone" type="text" class="ex-client-phone" style="height:30px; width:150px" value="<?php echo $single_client['phone']; ?>" readonly="" /></td>
 					<td><input name="ex-client-email" type="text" class="ex-client-email" style="height:30px;width:150px" value="<?php echo $single_client['email']; ?>" readonly="" /></td>
-					<td><input name="ex-client-address" type="text" class="ex-client-address" style="height:30px;" value="<?php echo $single_client['address']; ?>" readonly="" /></td>
+					<td><input name="ex-client-occupation" type="text" class="ex-client-occupation" style="height:30px;" value="<?php echo $single_client['occupation']; ?>" readonly="" /></td>
 					<td>
 						<div id="ex-user-form-btn-div">
 							<button type="button" class="apcal_btn apcal_btn-success" id="ex-book-now" name="ex-book-now" onclick="return CheckValidation('ExUser',this);"><i class="icon-ok icon-white"></i> <?php _e('Book Now', 'appointzilla'); ?></button>
-							<button type="button" class="apcal_btn apcal_btn-danger" id="ex-cancel-app" name="ex-cancel-app" onclick="return Canceling();"><i class="icon-remove icon-white"></i> <?php _e('Cancel', 'appointzilla'); ?></button>
+							<button type="button" class="apcal_btn apcal_btn-danger" id="ex-cancel-app" name="ex-cancel-app" onclick="return TryAgainBooking();"><i class="icon-remove icon-white"></i> <?php _e('Cancel', 'appointzilla'); ?></button>
 						</div>
 						<div id="ex-user-form-loading-img" style="display:none;"><?php _e('Scheduling appointment, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
 						<div id="ex-canceling-img" style="display:none;"><?php _e('Refreshing, Please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
 					</td>
 				</tr>
 				<?php endforeach;?>
-                </table>
             <?php
             } else { ?>
 				<tr>
@@ -1806,11 +1756,8 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
 					</td>
 				</tr>
             <?php
-            }
-            ?></div><?php
+            }?>
+            </table></div><?php
         }
     }
-    /*$output_string = ob_get_contents();
-    ob_end_clean();
-    return $output_string;*/
 }//end of short code function ?>

@@ -131,17 +131,6 @@
                 <td><input name="recurring_ed_date" type="text" id="recurring_ed_date" value="<?php echo $AppointmentDetails->recurring_ed_date; ?>" />&nbsp;<a href="#" rel="tooltip" title="<?php _e('Appointment Repeat End Date.', 'appointzilla'); ?>" ><i  class="icon-question-sign"></i></td>
             </tr>
             <tr>
-                <th scope="row"><strong><?php _e('Appointment By', 'appointzilla'); ?></strong></th>
-                <td><strong>:</strong></td>
-                <td>
-                    <select id="app_appointment_by" name="app_appointment_by">
-                        <option value="admin" <?php if($AppointmentDetails->appointment_by == 'admin') echo "selected"; ?> ><?php _e('Admin', 'appointzilla'); ?></option>
-                        <option value="user" <?php if($AppointmentDetails->appointment_by == 'user') echo "selected"; ?> > <?php _e('User', 'appointzilla'); ?></option>
-                        <option value="google calendar" <?php if($AppointmentDetails->appointment_by == 'google calendar') echo "selected"; ?> > <?php _e('Google Calendar', 'appointzilla'); ?></option>
-                    </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Appointment Booked By User/Admin.', 'appointzilla'); ?>" ><i  class="icon-question-sign"></i></a>
-                </td>
-            </tr>
-            <tr>
                 <th scope="row"><strong><?php _e('Status', 'appointzilla'); ?></strong></th>
                 <td><strong>:</strong></td>
                 <td>

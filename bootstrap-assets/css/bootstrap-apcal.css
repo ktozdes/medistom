@@ -3959,7 +3959,7 @@ input[type="submit"].apcal_btn.apcal_btn-mini {
 }
 
 .apcal_modal-body {
-  max-height: 400px;
+  height: 350px;
   padding: 15px;
   overflow-y: auto;
 }

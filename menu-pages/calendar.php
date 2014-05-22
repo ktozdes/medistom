@@ -366,7 +366,7 @@ jQuery(document).ready(function() {
                 });
                 return true;
             }
-        },
+        }
     }); // end of full-calendar js code
 
 
@@ -848,7 +848,7 @@ tr th
                 <a id="close" ><i class="icon-remove"></i></a>
             </div>
             <div class="alert alert-info">
-                <p><strong><?php _e('Schedule New Appointment', 'appointzilla'); ?></strong></p><?php _e('Step-1. Select Date & Service', 'appointzilla'); ?>
+                <p><strong><?php _e('Schedule New Appointment', 'appointzilla'); ?></strong></p><?php _e('Step-1. Select Date & Staff', 'appointzilla'); ?>
             </div>
         </div>
 
