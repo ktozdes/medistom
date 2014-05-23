@@ -1,7 +1,6 @@
 <?php
     global $wpdb;
     $AppointmentTableName = $wpdb->prefix . 'ap_appointments';
-    $ServiceTableName = $wpdb->prefix . 'ap_services';
     $ClientTableName = $wpdb->prefix . "ap_clients";
     $PaymentTransactionTable = $wpdb->prefix . "ap_payment_transaction";
     $CurrencyTableName = $wpdb->prefix . "ap_currency";
@@ -39,10 +38,7 @@
           <table width="100%" border="0" class="table table-hover">
               <tr>
                   <th align="left" scope="col"><?php _e('No.','appointzilla'); ?></th>
-                  <th align="left" scope="col"><?php _e('Txn Id','appointzilla'); ?></th>
-                  <th align="left" scope="col"><?php _e('Client','appointzilla'); ?></th>
-                  <th align="left" scope="col"><?php _e('Service','appointzilla'); ?></th>
-                  <th align="left" scope="col"><?php _e('Amount Billed','appointzilla'); ?></th>
+                  <th align="left" scope="col"><?php _e('Appointment No','appointzilla'); ?></th>
                   <th align="left" scope="col"><?php _e('Amount Paid','appointzilla'); ?></th>
                   <th align="left" scope="col"><?php _e('Time & Date','appointzilla'); ?></th>
                   <th align="left" scope="col"><?php _e('Status','appointzilla'); ?></th>
@@ -54,55 +50,10 @@
               <?php //get all transaction list
               $i = 1;
               if(count($AllTransaction)) {
-                  foreach($AllTransaction as $Transaction) { ?>
+              foreach($AllTransaction as $Transaction) { ?>
               <tr>
                   <td><em><?php echo $i."."; ?></em></td>
-                  <td><em><?php echo strtoupper($Transaction->txn_id); ?></em></td>
-                  <td>
-                     <em>
-                         <?php
-                            $staffid = $Transaction->client_id;
-                                $ClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTableName` WHERE `id` = '$staffid'");
-                            if(count($ClientDetails)){
-                                echo ucfirst($ClientDetails->name);
-                            } else {
-                                echo _e("Entry Deleted", "appointzilla");
-                            }
-                         ?>
-                     </em>
-                  </td>
-                  <td>
-                     <em><?php
-                            //currency symbol
-                            $cal_admin_currency_id = get_option('cal_admin_currency');
-                            if($cal_admin_currency_id) {
-                                $CurrencyTableName = $wpdb->prefix . "ap_currency";
-                                $AdminCurrency = $wpdb->get_row("SELECT `symbol` FROM `$CurrencyTableName` WHERE `id` = '$AdminCurrency_id'");
-                                $AdminCurrency = $AdminCurrency->symbol;
-                            } else {
-                                $AdminCurrency = "&#36;";
-                            }
-                            $ServiceId = $wpdb->get_row("SELECT `service_id` FROM `$AppointmentTableName` WHERE `id` = '$Transaction->app_id'");
-                            if(count($ServiceId)) {
-                                $ServiceDetails = $wpdb->get_row("SELECT `name`, `cost` FROM `$ServiceTableName` WHERE `id` = '$ServiceId->service_id'");
-                                echo ucwords($ServiceDetails->name);
-                            } else {
-                                echo _e("Entry Deleted", "appointzilla");
-                            }
-                         ?>
-                     </em>
-                  </td>
-                  <td>
-                      <em>
-                          <?php
-                            if(isset($ServiceDetails->cost)) {
-                                echo $AdminCurrency.ucwords($ServiceDetails->cost);
-                            } else {
-                                echo _e("Entry Deleted", "appointzilla");
-                            }
-                          ?>
-                      </em>
-                  </td>
+                  <td><em><a href="??page=update-appointment&viewid="<?php echo $Transaction->app_id?>><?php echo $Transaction->app_id; ?></a></em></td>
                   <td><em><?php echo $AdminCurrency.$Transaction->ammount; ?></em></td>
                   <td><em><?php echo $Transaction->date; ?></em></td>
                   <td><em><?php echo ucfirst($Transaction->status); ?></em></td>
@@ -111,7 +62,7 @@
               </tr>
                  <?php $i++; }   ?>
               <tr>
-                  <td colspan="9">
+                  <td colspan="6">
                       <ul id="pagination-flickr" style="border:1px #CCCCCC;">
                           <li><a href="?page=manage-payment-transaction&pageno=1" ><?php _e('First','appointzilla'); ?></a></li>
                           <?php // pagination list items
@@ -130,20 +81,8 @@
                   </td>
                   <td style="text-align: center;"><button name="deleteall" class="btn btn-primary" type="submit" id="deleteall" onclick="return confirm('<?php _e('Do you want to delete these transactions?','appointzilla'); ?>')" ><?php  _e('Delete','appointzilla'); ?></button></td>
               </tr>
-                  <?php } else { ?>
-              <tr class="alert"><td colspan="9"><strong><?php _e('Sorry No Transaction(s).','appointzilla'); ?></strong></td>
-                  <td>&nbsp;</td>
-              </tr>
-              <tr>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
+               <?php } else { ?>
+              <tr class="alert"><td colspan="6"><strong><?php _e('Sorry No Transaction(s).','appointzilla'); ?></strong></td>
                   <td>&nbsp;</td>
               </tr>
                  <?php } ?>

@@ -254,7 +254,19 @@ $AppointmentsTable_sql = "CREATE TABLE IF NOT EXISTS `$AppointmentsTableName` (
   `book_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 )DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
-$wpdb->query($AppointmentsTable_sql); 
+$wpdb->query($AppointmentsTable_sql);
+
+
+$Appointments_servie_table = $wpdb->prefix . "ap_appointment_service";
+$AppointmentsTable_sql = "CREATE TABLE IF NOT EXISTS `$Appointments_servie_table` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `appointment_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL,
+  `discount` VARCHAR( 20 ) NOT NULL ,
+  `update_date` DATE NOT NULL ,
+  PRIMARY KEY (`id`)
+)DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
+$wpdb->query($AppointmentsTable_sql);
 
 
 //2. create ap_events table

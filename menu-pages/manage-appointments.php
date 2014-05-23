@@ -113,7 +113,6 @@
                 <th align="left" scope="col"><?php _e('Staff','appointzilla'); ?></th>
                 <th align="left" scope="col"><?php _e('Date','appointzilla'); ?></th>
                 <th align="left" scope="col"><?php _e('Time','appointzilla'); ?></th>
-                <th align="left" scope="col"><?php _e('Service','appointzilla'); ?></th>
                 <th align="left" scope="col"><?php _e('Repeat','appointzilla'); ?></th>
                 <th align="left" scope="col"><?php _e('Status','appointzilla'); ?></th>
                 <th align="left" scope="col"><?php _e('Payment','appointzilla'); ?></th>
@@ -154,16 +153,6 @@
                         <?php
                             if($TimeFormat == 'h:i') $ATimeFormat = "g:ia"; else $ATimeFormat = "G:i";
                             echo date($ATimeFormat, strtotime($appointment->start_time))." - ".date($ATimeFormat, strtotime($appointment->end_time));
-                        ?>
-                    </em>
-                </td>
-                <td>
-                    <em>
-                        <?php
-                            $apppid=$appointment->service_id;
-                            $table_name = $wpdb->prefix . "ap_services";
-                            $servicedetails= $wpdb->get_row("SELECT * FROM $table_name WHERE `id` = '$apppid'");
-                            echo ucfirst($servicedetails->name);
                         ?>
                     </em>
                 </td>

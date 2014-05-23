@@ -157,7 +157,6 @@ foreach($service_category as $gruopname) { ?>
 	//creates cabinets
 	if (isset($_POST['CreateCabinet'])){
 		global $wpdb;
-		print_r($_POST);
         $table_name = $wpdb->prefix . "ap_cabinets";
         
 		$wpdb->insert( 
