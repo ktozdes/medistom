@@ -34,7 +34,7 @@ if (count($ServicesList)>0){
     foreach($ServicesList as $key=>$singleService){
         $total[paid]            = $singleService[paid];
         $total[full_price]     += $singleService[cost];
-        $total[discount_price] += (strpos($singleService[discount],'%')!==false) ? round($singleService[cost]*$singleService[discount]/100,2) :
+        $total[discount_price] += (strpos($singleService[discount],'%')!==false) ? round($singleService[cost]*(100-$singleService[discount])/100,2) :
             round($singleService[cost]-$singleService[discount]);
     }
     $PaymentList = $wpdb->get_row("SELECT SUM(ammount) FROM $payment_table
@@ -49,6 +49,15 @@ if (count($ServicesList)>0){
                     'date'=>date('Y-m-d'),
                     'status'=>'paid',
                     'gateway'=>'cash',
+                )
+            );
+        }
+        if (($total[discount_price]-$total[paid]-$newPayment)<0.01){
+            $wpdb->update($appointment_table,
+                array(
+                    'payment_status'=>'paid'),
+                array(
+                    'id'=>$appointmentID,
                 )
             );
         }
@@ -258,7 +267,8 @@ if (count($ServicesList)>0){
             </tr>
             </thead>
             <tbody><?php // get service list group wise
-            $ServiceDetails = $wpdb->get_results("SELECT $service_table.id as id, code, name, cost,percentage_ammount,  category_id, $appointment_service_table.id as checkbox_id, discount FROM $service_table LEFT JOIN $appointment_service_table on $appointment_service_table.service_id = $service_table.id WHERE `category_id` ='$gruopname->id' AND availability = 'yes' AND accept_payment='yes' ORDER BY implant");
+            $ServiceDetails = $wpdb->get_results("SELECT $service_table.id as id, code, name, cost,percentage_ammount,  category_id, $appointment_service_table.id as checkbox_id, discount FROM $service_table LEFT JOIN $appointment_service_table on $appointment_service_table.service_id = $service_table.id AND $appointment_service_table.appointment_id = $AppointmentId WHERE `category_id` ='$gruopname->id' AND availability = 'yes' AND accept_payment='yes' ORDER BY implant");
+            //echo $wpdb->last_query;
            foreach($ServiceDetails as $service) {?>
             <tr class="odd value_row row_cat_id-<?php echo $gruopname->id; ?>" style="border-bottom:1px;">
                 <td><?php echo ucwords($service->code); ?></td>
@@ -298,7 +308,7 @@ if (count($ServicesList)>0){
             foreach($ServicesList as $key=>$singleService){
                 $total[paid]            = $singleService[paid];
                 $total[full_price]     += $singleService[cost];
-                $total[discount_price] += (strpos($singleService[discount],'%')!==false) ? round($singleService[cost]*$singleService[discount]/100,2) : round($singleService[cost]-$singleService[discount]);
+                $total[discount_price] += (strpos($singleService[discount],'%')!==false) ? round($singleService[cost]*(100-$singleService[discount])/100,2) : round($singleService[cost]-$singleService[discount]);
             }
             ?>
             <div class="payment_container">
@@ -800,6 +810,7 @@ if (count($ServicesList)>0){
         <ul>
             <li><a href="#tab_cat_id-0"><?php _e('Appointment', 'appointzilla'); ?></a></li>
             <li><a href="#tab_cat_id-1"><?php _e('Services', 'appointzilla'); ?></a></li>
+            <li><a href="#tab_cat_id-2"><?php _e('Payment', 'appointzilla'); ?></a></li>
         </ul>
         <div id="tab_cat_id-0">
         <table width="100%" class="table" ><!---update appointment form--->
@@ -898,25 +909,12 @@ if (count($ServicesList)>0){
                 <td><strong>:</strong></td>
                 <td><em><?php echo _e(ucfirst($AppDetails->payment_status), 'appointzilla');?></em></td>
             </tr>
-            <tr>
-                <th scope="row">&nbsp;</th>
-                <td>&nbsp;</td>
-                <td>
-                    <?php if($FromBack) { ?>
-                        <a href="?page=appointment-calendar" class="btn"><i class="icon-arrow-left"></i> <?php _e('Back', 'appointzilla'); ?></a>
-                        <a href="?page=update-appointment&updateid=<?php echo $AppId; ?>&from=calendar" class="btn btn-primary"><?php _e('Edit', 'appointzilla'); ?></a>
-                    <?php } else { ?>
-                        <a href="?page=manage-appointments" class="btn"><i class="icon-arrow-left"></i> <?php _e('Back', 'appointzilla'); ?></a>
-                    <?php } ?>
-                </td>
-            </tr>
         </table>
         </div>
 
         <div id="tab_cat_id-1">
         <?php
-        $total =array();
-        $total[paid] =0;
+        $total = getTotalPrice($AppId);
         $ServiceDetails = $wpdb->get_results("SELECT $service_category_table.name as category_name, code, $service_table.name as service_name, cost, percentage_ammount, discount , (SELECT sum( ammount ) FROM $payment_table WHERE app_id =$AppId) AS paid
         FROM $appointment_service_table
         INNER JOIN $service_table  on $appointment_service_table.service_id = $service_table.id
@@ -933,13 +931,8 @@ if (count($ServicesList)>0){
                     <th scope="row"><?php _e('Price', 'appointzilla'); ?></th>
                 </tr>
                 <?php foreach($ServiceDetails as $service) :
-                    $service[price] = (strpos($service[discount],'%')!==false) ? round($service[cost]*$service[discount]/100,2) :
+                    $service[price] = (strpos($service[discount],'%')!==false) ? round($service[cost]*(100-$service[discount])/100,2) :
                         round($service[cost]-$service[discount]);
-                    $total[full_price] += $service[cost];
-                    $total[discount_price] += $service[price];
-                    $total[paid] = $service[paid];
-
-
                 ?>
                 <tr>
                     <td><?php echo $service[category_name]; ?></td>
@@ -951,16 +944,12 @@ if (count($ServicesList)>0){
                 </tr>
                 <?php endforeach;?>
             </table>
-            <table style="width:100%">
+            <table class="table">
                 <tr>
-                    <td colspan="3"><strong></strong><?php _e('Full Price', 'appointzilla'); ?>:</strong></td>
-                    <td><?php echo $total[full_price]; ?></td>
-                    <td colspan="3"><strong><?php _e('Discount Price', 'appointzilla'); ?>:</strong></td>
-                    <td><?php echo $total[discount_price]; ?></td>
-                    <td colspan="3"><strong><?php _e('Paid', 'appointzilla'); ?>:</strong></td>
-                    <td><?php echo $total[paid]; ?></td>
-                    <td colspan="3"><strong><?php _e('Left', 'appointzilla'); ?>:</strong></td>
-                    <td><?php echo ($total[discount_price] - $total[paid]); ?></td>
+                    <td><strong><?php _e('Full Price', 'appointzilla'); ?>:</strong><?php echo $total[full_price]; ?></td>
+                    <td><strong><?php _e('Discount Price', 'appointzilla'); ?>:</strong><?php echo $total[discount_price];?></td>
+                    <td><strong><?php _e('Paid', 'appointzilla'); ?>:</strong><?php echo $total[paid]; ?></td>
+                    <td><strong><?php _e('Left', 'appointzilla'); ?>:</strong><?php echo ($total[discount_price] - $total[paid]); ?></td>
                 </tr>
             </table>
     <?php }
@@ -968,9 +957,83 @@ if (count($ServicesList)>0){
         <div><?php _e('No Service Selected', 'appointzilla'); ?></div>
     <?php } ?>
     </div>
+        <div id="tab_cat_id-2">
+            <?php
+            $total = getTotalPrice($AppId);
+            $PaymentList = $wpdb->get_results("SELECT * FROM $payment_table
+        WHERE `app_id` = $AppId",ARRAY_A);
+            if (count($ServiceDetails)>0){?>
+                <table width="100%" class="table" ><!---update appointment form--->
+                    <tr>
+                        <th scope="row"><?php _e('Date', 'appointzilla'); ?></th>
+                        <th scope="row"><?php _e('Amount', 'appointzilla'); ?></th>
+                        <th scope="row"><?php _e('Status', 'appointzilla'); ?></th>
+                        <th scope="row"><?php _e('Payment Method', 'appointzilla'); ?></th>
+                    </tr>
+                    <?php foreach($PaymentList as $singlePayment) :
+                        $singlePayment[date] = DateTime::createFromFormat('Y-m-d', $singlePayment[date]);
+                        $singlePayment[date] = $singlePayment[date]->format('d-m-Y');
+                        if      ($singlePayment[gateway]=='cash')
+                            $singlePayment[gateway] = __('Cash','appointzilla');
+                        else if ($singlePayment[gateway]=='card')
+                            $singlePayment[gateway] = __('Card','appointzilla');
+                        ?>
+                        <tr>
+                            <td><?php echo $singlePayment[date]; ?></td>
+                            <td><?php echo $singlePayment[ammount]; ?></td>
+                            <td><?php echo $singlePayment[status]; ?></td>
+                            <td><?php echo $singlePayment[gateway]; ?></td>
+                        </tr>
+                    <?php endforeach;?>
+                </table>
+                <table class="table">
+                    <tr>
+                        <td><strong><?php _e('Full Price', 'appointzilla'); ?>:</strong><?php echo $total[full_price]; ?></td>
+                        <td><strong><?php _e('Discount Price', 'appointzilla'); ?>:</strong><?php echo $total[discount_price]; ?></td>
+                        <td><strong><?php _e('Paid', 'appointzilla'); ?>:</strong><?php echo $total[paid]; ?></td>
+                        <td><strong><?php _e('Left', 'appointzilla'); ?>:</strong><?php echo ($total[discount_price] - $total[paid]); ?></td>
+                    </tr>
+                </table>
+            <?php }
+            else{?>
+                <div><?php _e('No Service Selected', 'appointzilla'); ?></div>
+            <?php } ?>
+        </div>
+        <div>
+            <table clas="table">
+                <tr>
+                    <th scope="row">&nbsp;</th>
+                    <td>&nbsp;</td>
+                    <td><a href="?page=appointment-calendar" class="btn"><i class="icon-arrow-left"></i> <?php _e('Back', 'appointzilla'); ?></a>
+                        <a href="?page=update-appointment&updateid=<?php echo $AppId; ?>&from=calendar" class="btn btn-primary"><?php _e('Edit', 'appointzilla'); ?></a></td>
+                </tr>
+            </table>
+        </div>
     <?php } ?>
     <!--time-picker js -->
     <script src="<?php echo plugins_url('/timepicker-assets/js/jquery-1.7.2.min.js', __FILE__); ?>" type="text/javascript"></script>
     <script src="<?php echo plugins_url('/timepicker-assets/js/jquery-ui.min.js', __FILE__); ?>" type="text/javascript"></script>
     <script src="<?php echo plugins_url('/timepicker-assets/js/jquery-ui-timepicker-addon.js', __FILE__); ?>" type="text/javascript"></script>
 </div>
+<?php
+function getTotalPrice($appID)
+{
+    global $wpdb;
+    $appointment_service_table = $wpdb->prefix . "ap_appointment_service";
+    $service_table          = $wpdb->prefix . "ap_services";
+    $payment_table          = $wpdb->prefix . "ap_payment_transaction";
+    $returnValue = array();
+    $ServiceDetails = $wpdb->get_results("SELECT cost, discount, (SELECT sum( ammount ) FROM $payment_table WHERE app_id =$appID) AS paid
+        FROM $appointment_service_table
+        INNER JOIN $service_table  on $appointment_service_table.service_id = $service_table.id
+        WHERE $appointment_service_table.appointment_id = $appID", ARRAY_A);
+    //echo $wpdb->last_query;
+    foreach($ServiceDetails as $service) {
+        $returnValue[full_price] += $service[cost];
+        $returnValue[discount_price] += (strpos($service[discount],'%')!==false) ? round($service[cost]*(100-$service[discount])/100,2) :
+            round($service[cost]-$service[discount]);
+        $returnValue[paid] = $service[paid];
+    }
+    return $returnValue;
+}
+?>

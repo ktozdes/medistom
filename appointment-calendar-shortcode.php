@@ -689,6 +689,7 @@ function appointment_calendar_shortcode() {
 			var ClientFirstName = jQuery(e).parents('tr').find(".ex-client-name").val();
 			var ClientPhone = jQuery(e).parents('tr').find(".ex-client-phone").val();
 			var ClientSi = jQuery(e).parents('tr').find(".ex-client-si").val();
+			var ClientID = jQuery(e).parents('tr').find(".client-id").val();
 
 			//client first name
 			if (ClientFirstName == "") {
@@ -715,7 +716,7 @@ function appointment_calendar_shortcode() {
 
            var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime=" + EndTime;
            var PostData2 = "&UserType=" + UserType + "&ClientEmail=" + ClientEmail;
-           var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientPhone=" + ClientPhone;
+           var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientPhone=" + ClientPhone+'&clientID='+ClientID;
            var PostData = PostData1 + PostData2 + PostData3;
 
            jQuery('#ex-user-form-btn-div').hide();
@@ -1231,6 +1232,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
             $StaffId = $_POST['StaffId'];
             $AppDateNo = $_POST['AppDate'];
             $cabinetID = $_POST['CabinetId'];
+            $clientID = $_POST['clientID'];
 
             $ClientEmail = $_POST['ClientEmail'];
             $ClientNote = $_POST['ClientNote'];
@@ -1279,7 +1281,14 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                     if($wpdb->query($InsertClient)) {
                         $LastClientId = mysql_insert_id();
                     }
-                }?>
+                }
+                $wpdb->update(
+                    $AppointmentsTable,
+                    array('client_id'=>$LastClientId),
+                    array(id=>$LastAppointmentId)
+                );
+
+                ?>
 
 
                 <div class="apcal_modal" id="AppForthModal" style="z-index:10000;">

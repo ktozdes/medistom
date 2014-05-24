@@ -72,6 +72,8 @@ function appointment_calendar_menu() {
     //Export Appointments & Client List
     $SubMenu19 = add_submenu_page('appointment-calendar', __('Export Lists', 'appointzilla'), __('Export Lists', 'appointzilla'), 'administrator', 'export-lists', 'display_export_lists_page' );
 
+    $SubMenu30 = add_submenu_page('appointment-calendar', __('Report', 'appointzilla'), __('Report', 'appointzilla'), 'administrator', 'report', 'display_report_page' );
+
     //Coupon Codes
     $SubMenu21 = add_submenu_page('appointment-calendar', __('Coupons Codes', 'appointzilla'), __('Coupons Codes', 'appointzilla'), 'administrator', 'apcal-coupons-codes', 'display_coupons_codes_page' );
 
@@ -81,7 +83,7 @@ function appointment_calendar_menu() {
     // Remove Plugin
     $SubMenu16 = add_submenu_page( 'appointment-calendar', __('Remove Plugin', 'appointzilla'), __('Remove Plugin', 'appointzilla'), 'administrator', 'uninstall-plugin', 'display_uninstall_plugin_page' );
 
-    // Support & Help
+    // Support &
     $SubMenu17 = add_submenu_page( 'appointment-calendar', __('Help & Support', 'appointzilla'), __('Help & Support', 'appointzilla'), 'administrator', 'support-n-help', 'display_support_n_help_page' );
 
     //client-calendar
@@ -131,6 +133,7 @@ function appointment_calendar_menu() {
     //client update appointment
     add_action( 'admin_print_styles-' . $SubMenu24, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu25, 'other_pages_css_js' );
+    add_action( 'admin_print_styles-' . $SubMenu30, 'other_pages_css_js' );
 
 }// end of menu function
 
@@ -289,6 +292,9 @@ function display_export_lists_page() {
 //coupons codes page
 function display_coupons_codes_page() {
     require_once("menu-pages/coupons-codes.php");
+}
+function display_report_page() {
+    require_once("menu-pages/report.php");
 }
  
  //settings page

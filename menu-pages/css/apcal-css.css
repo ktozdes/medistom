@@ -32,3 +32,9 @@
     }
     .fancybox-lock{
     }
+    tr.header-row{
+        background:#C3D9FF;
+    }
+    .table-hover tr.header-row:hover td, .table-hover tr.header-row:hover th {
+        background-color:#86b2ff;
+    }
