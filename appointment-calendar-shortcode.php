@@ -188,7 +188,6 @@ function appointment_calendar_shortcode() {
                         jQuery('#appdate2').val(appdate2);
                         jQuery('#AppFirstModal').show();
                         jQuery("#datepicker").datepicker("setDate", appdate);
-
                         var dayOfWeek = jQuery('#datepicker').datepicker('getDate').getUTCDay();
                         jQuery('#loading-staff').show();
                         jQuery.ajax({
@@ -631,46 +630,18 @@ function appointment_calendar_shortcode() {
            if (ClientFirstName == "") {
                jQuery(".client-first-name").after("<span class='error'>&nbsp;<br><strong><?php _e('First name required.', 'appointzilla'); ?></strong></span>");
                return false;
-           } else {
-               var Res = isNaN(ClientFirstName);
-               if(Res == false) {
-                   jQuery(".client-first-name").after("<span class='error'>&nbsp;<br><strong><?php _e('Invalid first name.', 'appointzilla'); ?></strong></span>");
-                   return false;
-               }
-               var NameRegx = /^[a-zA-Z0-9- ]*$/;
-               if(NameRegx.test(ClientFirstName) == false) {
-                   jQuery(".client-first-name").after("<span class='error'>&nbsp;<br><strong><?php _e('No special characters allowed.', 'appointzilla'); ?></strong></span>");
-                   return false;
-               }
            }
 
            //client last name
            if (ClientLastName == "") {
                jQuery(".client-last-name").after("<span class='error'>&nbsp;<br><strong><?php _e('Last name required.', 'appointzilla'); ?></strong></span>");
                return false;
-           } else {
-               var Res = isNaN(ClientLastName);
-               if(Res == false) {
-                   jQuery(".client-last-name").after("<span class='error'>&nbsp;<br><strong><?php _e('Invalid last name.', 'appointzilla'); ?></strong></span>");
-                   return false;
-               }
-               var NameRegx = /^[a-zA-Z0-9- ]*$/;
-               if(NameRegx.test(ClientLastName) == false) {
-                   jQuery(".client-last-name").after("<span class='error'>&nbsp;<br><strong><?php _e('No special characters allowed.', 'appointzilla'); ?></strong></span>");
-                   return false;
-               }
            }
 
            //client phone
            if (ClientPhone == "") {
-               jQuery(".client-phone").after("<span class='error'>&nbsp;<br><strong><?php _e("Phone required. <br>Only Numbers 1234567890.", "appointzilla"); ?></strong></span>");
+               jQuery(".client-phone").after("<span class='error'>&nbsp;<br><strong><?php _e("Phone required", "appointzilla"); ?></strong></span>");
                return false;
-           } else {
-               var ClientPhoneRes = isNaN(ClientPhone);
-               if(ClientPhoneRes == true) {
-                   jQuery(".client-phone").after("<span class='error'>&nbsp;<br><strong><?php _e("Invalid phone. <br>Numbers only: 1234567890.", "appointzilla"); ?></strong></span>");
-                   return false;
-               }
            }
 
            var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime="+EndTime;
@@ -695,17 +666,6 @@ function appointment_calendar_shortcode() {
 			if (ClientFirstName == "") {
                jQuery("#ex-client-first-name").after("<span class='error'>&nbsp;<br><strong><?php _e('First name required.', 'appointzilla'); ?></strong></span>");
                return false;
-           } else {
-               var Res = isNaN(ClientFirstName);
-               if(Res == false) {
-                   jQuery("#ex-client-first-name").after("<span class='error'>&nbsp;<br><strong><?php _e('Invalid first name.', 'appointzilla'); ?></strong></span>");
-                   return false;
-               }
-               var NameRegx = /^[a-zA-Z0-9- ]*$/;
-               if(NameRegx.test(ClientFirstName) == false) {
-                   jQuery("#ex-client-first-name").after("<span class='error'>&nbsp;<br><strong><?php _e('No special characters allowed.', 'appointzilla'); ?></strong></span>");
-                   return false;
-               }
            }
 
            //client phone
@@ -1113,7 +1073,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                             <tr>
                                 <th scope="row"><?php _e('Phone', 'appointzilla'); ?></th>
                                 <td><strong>:</strong></td>
-                                <td><input name="client-phone" type="text" class="client-phone" style="height:30px;"  maxlength="14"/></td>
+                                <td><input name="client-phone" type="text" class="client-phone" style="height:30px;"/></td>
                             </tr>
                             <tr>
                                 <th scope="row"><?php _e('Email', 'appointzilla'); ?></th>
@@ -1238,6 +1198,8 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
             $ClientNote = $_POST['ClientNote'];
             $ClientName = sanitize_text_field($_POST['ClientFirstName']).' '.sanitize_text_field($_POST['ClientLastName']);
             $ClientPhone = $_POST['ClientPhone'];
+            $ClientAddress = $_POST['ClientAddress'];
+            $ClientOccupation = $_POST['ClientOccupation'];
             $AppointmentKey = md5(date("F j, Y, g:i a"));
             $AppDate = date("Y-m-d", strtotime($AppDateNo));
             $StartTime = $_POST['StartTime'];
@@ -1277,7 +1239,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                     $LastClientId = $ExistClientId;
                 } else {
                     // insert new client deatils
-                    $InsertClient = "INSERT INTO `$ClientTable` (`id` ,`name` ,`email` ,`phone` ,`note`) VALUES ('NULL', '$ClientName', '$ClientEmail', '$ClientPhone', '$ClientNote');";
+                    $InsertClient = "INSERT INTO `$ClientTable` (`id` ,`name` ,`email` ,`phone`,address,occupation ,`note`) VALUES ('NULL', '$ClientName', '$ClientEmail', '$ClientPhone','$ClientAddress', '$ClientOccupation', '$ClientNote');";
                     if($wpdb->query($InsertClient)) {
                         $LastClientId = mysql_insert_id();
                     }

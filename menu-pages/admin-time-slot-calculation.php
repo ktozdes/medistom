@@ -1,3 +1,20 @@
+<div class="modal" id="SecondModal" >
+    <form action="" method="post" name="secondmodal" id="secondmodal">
+        <input name="StaffId" id="StaffId" type="hidden" value="<?php echo $_GET['StaffId']; ?>" />
+        <input name="AppDate" id="AppDate" type="hidden" value="<?php echo $_GET['AppDate']; ?>" />
+        <input name="CabinetID" id="CabinetID" type="hidden" value="<?php echo $_GET['CabinetID']; ?>" />
+
+        <div class="modal-info">
+            <div style="float:right; margin-top:18px; margin-right:40px;">
+                <a href="" onclick="CloseModelform()" id="close" ><i class="icon-remove"></i></a>
+            </div>
+            <div class="alert alert-info">
+                <p><strong><?php _e('Schedule New Appointment', 'appointzilla'); ?></strong></p><?php _e('Step-2. Select Service Time & Repeat', 'appointzilla'); ?>
+            </div>
+        </div><!--end modal-info-->
+
+        <div class="modal-body">
+            <div id="time-slot-list">
 <!---loading second modal form ajax return code and time slot calculation--->
 <?php 
 // time-slots calculation
@@ -5,12 +22,8 @@ global $wpdb;
 $ToadyBusinessClose = 1; //open
 $ToadyStaffNotAvailable = 1; //available
 $AppointmentDate = date("Y-m-d", strtotime($_GET['AppDate']));
-$ServiceId = $_GET['ServiceId'];
 $StaffId =  $_GET['StaffId'];
 
-// include appointzilla class file
-require_once('appointzilla-class.php');
-$AppointZilla = new Appointzilla();
 
 $BusinessHours = $AppointZilla->GetBusiness($AppointmentDate, $StaffId);
 if($BusinessHours['Biz_start_time'] == 'none' || $BusinessHours['Biz_end_time'] == 'none') {
@@ -19,7 +32,7 @@ if($BusinessHours['Biz_start_time'] == 'none' || $BusinessHours['Biz_end_time'] 
     $Biz_start_time = $BusinessHours['Biz_start_time'];
     $Biz_end_time = $BusinessHours['Biz_end_time'];
 }
-
+$timeSlotList = $AppointZilla->getActiveTimeSlots($StaffId, $AppointmentDate, $Biz_start_time, $Biz_end_time);
 if($ToadyBusinessClose) {
     $TodaysAllDayEvent = $AppointZilla->CheckAllDayEvent($AppointmentDate, $StaffId);
 
@@ -31,10 +44,7 @@ if($ToadyBusinessClose) {
         $AllDayEvent = 0;
 
         //get service details
-        $ServiceTableName = $wpdb->prefix."ap_services";
-        $FindService_sql = "SELECT `name`, `duration`, `capacity` FROM `$ServiceTableName` WHERE `id` = '$ServiceId'";
-        $ServiceData = $wpdb->get_row($FindService_sql, OBJECT);
-        $ServiceDuration = $ServiceData->duration;
+        $ServiceDuration = 60;
 
         //get staff details
         $StaffTableName = $wpdb->prefix."ap_staff";
@@ -42,103 +52,34 @@ if($ToadyBusinessClose) {
 
         echo "<div class='alert alert-info'>".__('Select Time For', 'appointzilla')."<strong> '".ucwords($ServiceData->name)."' </strong>".__('On', 'appointzilla')." <strong> ".date("F jS, l", strtotime($AppointmentDate))."</strong> ".__('With', 'appointzilla')." <strong>'".ucwords($StaffData->name)."'</strong></div><hr/>";
 
-        $DisableSlotsTimes = $AppointZilla->TimeSlotCalculation($AppointmentDate, $StaffId, $ServiceId, $Biz_start_time, $Biz_end_time);
 
         $start = strtotime($Biz_start_time);
-        $end = strtotime($Biz_end_time);
-
-        //if($ServiceDuration < 30) $ServiceDuration = $ServiceDuration; else $ServiceDuration = 30;
-        //for( $i = $start; $i < $end; $i += (60*$ServiceDuration))
-        for( $i = $start; $i < $end; $i += (60*15)) {
-            $AllSlotTimesList[] = date('h:i A', $i);
-        } ?>
+        $end = strtotime($Biz_end_time);?>
             <!--start time list-->
-            <div class="alert alert-block" id="time_slot_box">
             <?php
-
-            /*//check capacity booking on this service
-            if($ServiceData->capacity) {
-                echo "<p align=center><strong>";
-                //_e('Capacity Per Time Slot:', 'appointzilla'); echo "</strong> ".$ServiceData->capacity;
-                _e('Capacity Per Time Slot:', 'appointzilla'); echo "</strong> ";
-                _e('Unlimited For Admin', 'appointzilla');
-                echo "</p>";
-                $CapecityEnable = 'yes';
-            }*/
 
             if($TimeFormat == "h:i") $SlotTimeFormat = "h:i A";
-            else $SlotTimeFormat = "H:i";
+            else $SlotTimeFormat = "H:i";?>
 
-            echo "<strong>".__('Start Time:', 'appointzilla')." </strong><br />&nbsp;<select id='start_time' name='start_time' onchange='starttimechange()' style='width:140px;'>";
-                echo "<option value='-1' selected>" . __('Select Start Time', 'appointzilla') . "</option>";
-            foreach($AllSlotTimesList as $Single) {
-                if(in_array($Single, $DisableSlotsTimes)) {
-                    // disable slots
-                    /*//check in appointment table if this time occupied equla to capacity
-                    //(use $AppointmentDate $ServiceId $StaffId $Single(as start_time)
-                    global $wpdb;
-                    $AppointmentTable = $wpdb->prefix . "ap_appointments";
-                    $StartTime = date("h:i A", strtotime($Single));
-                    $GetTotalBooking = $wpdb->get_results("SELECT * FROM `$AppointmentTable` WHERE `service_id` ='$ServiceId' AND `staff_id` ='$StaffId' AND `start_time` LIKE '$StartTime' AND `date` = '$AppointmentDate'");
-                    if(count($GetTotalBooking) < 9999)
-                    {
-                        //keep enable capacity not occupied
-                        echo "<option value='$Single' >".date($SlotTimeFormat, strtotime($Single))."</option>";
-                        $Enable[] = $Single;
-                    }
-                    else
-                    {*/
-                        // disable it capacity occupied
-                        echo "<option value='$Single' disabled>".date($SlotTimeFormat, strtotime($Single))."</option>";
-                        $Disable[] = $Single;
-                    //}
-                } else {
-                    // enable slots
-                    echo "<option value='$Single' >".date($SlotTimeFormat, strtotime($Single))."</option>";
-                    $Enable[] = $Single;
-                }
-            }// end foreach
-            echo "</select>&nbsp;&nbsp;";
-            ?>
-            <div style=" display:none" id="start_time_error"><span class="error"><strong><?php _e('Invalid Start Time. Start Time should be less than End Time.', 'appointzilla'); ?></strong></sapn></div>
-            <br />
-
+            <div class="apcal_alert apcal_alert-block" id="time_slot_box" style="float:left; margin-bottom: 0px;">
+                <?php
+                foreach($timeSlotList as $singleTime) {
+                    $removecln = "H".str_replace(":", "", date($TimeFormat,$singleTime));?>
+                    <div style="width:90px; float:left; padding:0px; display:inline-block;">
+                        <input name="start_time" class="start_time" type="radio"  style="margin: 0px 0 0; vertical-align: middle;" value="<?php echo date($TimeFormat, $singleTime); ?>"/>
+                        <span id="<?php echo $removecln; ?>"><strong><?php echo date($TimeFormat, $singleTime); ?></strong></span>
+                    </div>
+                <?php }?>
+            </div>  <!-----time slot list end ------->
             <?php
-            // end time list
-
-            echo "<strong>".__('End Time: ', 'appointzilla')."</strong><br />&nbsp;<select id='end_time' name='end_time' onchange='endtimechange()' style='width:140px;'>";
-                echo "<option value='-1' selected>" . __('Select End Time', 'appointzilla') . "</option>";
-            foreach($AllSlotTimesList as $Single) {
-                if(in_array($Single, $DisableSlotsTimes)) {
-                    // disable slots
-                    //ckeck in appointment table if this time occupied equla to capacity
-                    //(use $AppointmentDate $ServiceId $StaffId $Single(as start_time)
-                    /*global $wpdb;
-                    $AppointmentTable = $wpdb->prefix . "ap_appointments";
-                    $StartTime = date("h:i A", strtotime($Single));
-                    $GetTotalBooking = $wpdb->get_results("SELECT * FROM `$AppointmentTable` WHERE `service_id` ='$ServiceId' AND `staff_id` ='$StaffId' AND `start_time` LIKE '$StartTime' AND `date` = '$AppointmentDate' AND `status` = 'approved' ");
-                    //echo count($GetTotalBooking);
-                    if(count($GetTotalBooking) < 9999) {
-                        //keep enable capacity not occupied
-                        echo "<option value='$Single' >".date($SlotTimeFormat, strtotime($Single))."</option>";
-                        $Enable[] = $Single;
-                    } else {*/
-                        // disable it capacity occupied
-                        echo "<option value='$Single' disabled>".date($SlotTimeFormat, strtotime($Single))."</option>";
-                        $Disable[] = $Single;
-                    //}
-                } else {
-                    // enable slots
-                    echo "<option value='$Single'>".date($SlotTimeFormat, strtotime($Single))."</option>";
-                    $Enable[] = $Single;
-                    $AllDayEnableSlots = 1;
-                }
-            }// end foreach
-            echo "</select>";
-            ?>
-            <div style=" display:none" id="end_time_error"><sapn class="error"><strong><?php _e('Invalid End Time. End Time should be greater than Start Time.', 'appointzilla'); ?></strong></sapn></div>
-            <?php
-            unset($DisableSlotsTimes);
-            unset($AllSlotTimesList);
-    } // end else
+    }
 } ?>
+            <div id="buttondiv" align="center">
+                <button type="button" class="btn" value="" id="back1" name="back1" onclick="loadfirstmodal()"><i class="icon-arrow-left"></i> <?php _e('Back', 'appointzilla'); ?></button>
+                <button type="button" class="btn" value="" id="next2" name="next2" onclick="loadthirdmodal()"><?php _e('Next', 'appointzilla');?> <i class="icon-arrow-right"></i></button>
+            </div>
+            <div id="loading" align="center" style="display:none;"><?php _e('Loading...', 'appointzilla'); ?><img src="<?php echo plugins_url()."/appointment-calendar-premium/images/loading.gif"; ?>" /></div>
+        <br>
+        <div class='alert alert-error' align="center"><?php _e('Admin can create appointments at any time.', 'appointzilla'); ?></div>
+    </form>
+</div>

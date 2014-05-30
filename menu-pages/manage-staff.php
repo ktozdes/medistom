@@ -259,9 +259,9 @@
     <style type="text/css"> .error{  color:#FF0000; } </style>
     <script type="text/javascript">
     jQuery(document).ready(function () {
+
         // form submit validation js
         jQuery('form').submit(function() {
-
             jQuery('.error').hide();
             var staff_name = jQuery("input#staff_name").val();
             if (staff_name== "") {
@@ -292,12 +292,6 @@
             if (staff_phone== "") {
                 jQuery("#staff_phone").after('<span class="error">&nbsp;<br><strong><?php _e('Phone Number cannot be blank.','appointzilla'); ?></strong></span>');
                 return false;
-            } else {
-                var staff_phone = isNaN(staff_phone);
-                if(staff_phone== true) {
-                    jQuery("#staff_phone").after('<span class="error">&nbsp;<br><strong><?php _e('Invalid value.','appointzilla'); ?></strong></span>');
-                    return false;
-                }
             }
 
             var staff_experience = jQuery("input#staff_experience").val();

@@ -67,7 +67,7 @@ function appointment_calendar_menu() {
     $SubMenu14 = add_submenu_page( '', 'Update Appointment', '', 'administrator', 'update-appointment', 'display_update_appointment_page' );
 
     // Payment Transaction Page
-    $SubMenu18 = add_submenu_page( 'appointment-calendar', __('Payment Transaction', 'appointzilla'), __('Payment Transaction', 'appointzilla'), 'administrator', 'manage-payment-transaction', 'display_payment_transaction_page' );
+    //$SubMenu18 = add_submenu_page( 'appointment-calendar', __('Payment Transaction', 'appointzilla'), __('Payment Transaction', 'appointzilla'), 'administrator', 'manage-payment-transaction', 'display_payment_transaction_page' );
 
     //Export Appointments & Client List
     $SubMenu19 = add_submenu_page('appointment-calendar', __('Export Lists', 'appointzilla'), __('Export Lists', 'appointzilla'), 'administrator', 'export-lists', 'display_export_lists_page' );
@@ -75,13 +75,12 @@ function appointment_calendar_menu() {
     $SubMenu30 = add_submenu_page('appointment-calendar', __('Report', 'appointzilla'), __('Report', 'appointzilla'), 'administrator', 'report', 'display_report_page' );
 
     //Coupon Codes
-    $SubMenu21 = add_submenu_page('appointment-calendar', __('Coupons Codes', 'appointzilla'), __('Coupons Codes', 'appointzilla'), 'administrator', 'apcal-coupons-codes', 'display_coupons_codes_page' );
+    //$SubMenu21 = add_submenu_page('appointment-calendar', __('Coupons Codes', 'appointzilla'), __('Coupons Codes', 'appointzilla'), 'administrator', 'apcal-coupons-codes', 'display_coupons_codes_page' );
 
     // Settings Page
     $SubMenu15 = add_submenu_page( 'appointment-calendar', __('Settings', 'appointzilla'), __('Settings', 'appointzilla'), 'administrator', 'app-calendar-settings', 'display_settings_page' );
 
     // Remove Plugin
-    $SubMenu16 = add_submenu_page( 'appointment-calendar', __('Remove Plugin', 'appointzilla'), __('Remove Plugin', 'appointzilla'), 'administrator', 'uninstall-plugin', 'display_uninstall_plugin_page' );
 
     // Support &
     $SubMenu17 = add_submenu_page( 'appointment-calendar', __('Help & Support', 'appointzilla'), __('Help & Support', 'appointzilla'), 'administrator', 'support-n-help', 'display_support_n_help_page' );
@@ -114,18 +113,16 @@ function appointment_calendar_menu() {
     add_action( 'admin_print_styles-' . $SubMenu14, 'other_pages_css_js' );
     //settings
     add_action( 'admin_print_styles-' . $SubMenu15, 'other_pages_css_js' );
-    //remove plugin
-    add_action( 'admin_print_styles-' . $SubMenu16, 'other_pages_css_js' );
     //support n help
     add_action( 'admin_print_styles-' . $SubMenu17, 'other_pages_css_js' );
     //payment txn
-    add_action( 'admin_print_styles-' . $SubMenu18, 'other_pages_css_js' );
+    //add_action( 'admin_print_styles-' . $SubMenu18, 'other_pages_css_js' );
     //export lists
     add_action( 'admin_print_styles-' . $SubMenu19, 'other_pages_css_js' );
     //staff manage appointment
     add_action( 'admin_print_styles-' . $SubMenu20, 'other_pages_css_js' );
     //coupons codes
-    add_action( 'admin_print_styles-' . $SubMenu21, 'other_pages_css_js' );
+    //add_action( 'admin_print_styles-' . $SubMenu21, 'other_pages_css_js' );
     //client calendar
     add_action( 'admin_print_styles-' . $SubMenu22, 'calendar_css_js' );
     //client appointments
@@ -141,6 +138,7 @@ function calendar_css_js() {
     wp_register_script( 'jquery-custom',plugins_url('menu-pages/fullcalendar-assets-new/js/jquery-ui-1.8.23.custom.min.js', __FILE__), array('jquery'), true );
     wp_enqueue_script('full-calendar',plugins_url('/menu-pages/fullcalendar-assets-new/js/fullcalendar.min.js', __FILE__),array('jquery','jquery-custom'));
     wp_enqueue_script('datepicker-js',plugins_url('/menu-pages/datepicker-assets/js/jquery.ui.datepicker.js', __FILE__),array('jquery','jquery-custom'));
+    wp_enqueue_script('mask-js',plugins_url('/menu-pages/js/jquery.maskedinput-1.2.2.js', __FILE__),array('jquery'));
 
     wp_enqueue_style('bootstrap-css',plugins_url('/bootstrap-assets/css/bootstrap.css', __FILE__));
     wp_enqueue_style('bootstrap-css');
@@ -157,6 +155,7 @@ function other_pages_css_js() {
     wp_enqueue_style('fancybox-css',plugins_url('/bootstrap-assets/css/jquery.fancybox.css', __FILE__));
     wp_enqueue_style('fancybox-thumbs-css',plugins_url('/bootstrap-assets/css/jquery.fancybox-thumbs.css', __FILE__));
 
+
     wp_enqueue_script( 'jquery-ui',plugins_url('menu-pages/jquery-ui-custom/js/jquery-ui-1.10.4.custom.js', __FILE__), array('jquery'), true );
     wp_enqueue_script('datepicker-js',plugins_url('/menu-pages/datepicker-assets/js/jquery.ui.datepicker.js', __FILE__),array('jquery','jquery-custom'));
     wp_enqueue_script('tooltip',plugins_url('/bootstrap-assets/js/bootstrap-tooltip.js', __FILE__),array('jquery'));
@@ -164,6 +163,7 @@ function other_pages_css_js() {
     wp_enqueue_script('bootstrap-application',plugins_url('/bootstrap-assets/js/application.js', __FILE__));
     wp_enqueue_script('fancybox-js',plugins_url('/bootstrap-assets/js/jquery.fancybox.js', __FILE__),array('jquery'));
     wp_enqueue_script('fancybox-thumbs-js',plugins_url('/bootstrap-assets/js/jquery.fancybox-thumbs.js', __FILE__),array('jquery'));
+    wp_enqueue_script('mask-js',plugins_url('/menu-pages/js/jquery.maskedinput-1.2.2.js', __FILE__),array('jquery'));
 
     //font-awesome js n css
     wp_enqueue_style(

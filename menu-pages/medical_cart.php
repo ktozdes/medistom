@@ -75,23 +75,23 @@ else if ($_GET['action']=='delete' && is_numeric($_GET['cart_id']) && $_GET['car
 <script>
     jQuery(document).ready(function($){
 
-        $("a.fancybox-thumbs").fancybox({
+        jQuery("a.fancybox-thumbs").fancybox({
             helpers : {
                 thumbs : true,
                 theme : 'dark'
             }
         });
 
-        $.datepicker.setDefaults( {dateFormat:"dd/mm/yy"} );
-        $( ".datepicker" ).datepicker({ changeMonth: true},$.datepicker.regional[ "ru" ]);
+        jQuery.datepicker.setDefaults( {dateFormat:"dd/mm/yy"} );
+        jQuery( ".datepicker" ).datepicker({ changeMonth: true},jQuery.datepicker.regional[ "ru" ]);
 
-        $('form[name=new_row_form]').submit(function(event){
-            if ($('#cart_date').val()=='' || $('#cart_code').val()=='' || $('#cart_tooth').val()==''){
+        jQuery('form[name=new_row_form]').submit(function(event){
+            if (jQuery('#cart_date').val()=='' || jQuery('#cart_code').val()=='' || jQuery('#cart_tooth').val()==''){
                 event.preventDefault();
             }
-            if ($('#cart_code').val()=='')
+            if (jQuery('#cart_code').val()=='')
                 jQuery("#cart_code").after('<span class="error">&nbsp;<br><strong><?php _e('Cannot be blank.','appointzilla'); ?></strong></span>');
-            if ($('#cart_tooth').val()=='')
+            if (jQuery('#cart_tooth').val()=='')
                 jQuery("#cart_tooth").after('<span class="error">&nbsp;<br><strong><?php _e('Cannot be blank.','appointzilla'); ?></strong></span>');
             //add stuff here
         });
@@ -99,7 +99,7 @@ else if ($_GET['action']=='delete' && is_numeric($_GET['cart_id']) && $_GET['car
         var custom_uploader;
 
 
-        $('#upload_image_button, #upload_image').click(function(e) {
+        jQuery('#upload_image_button, #upload_image').click(function(e) {
 
             e.preventDefault();
 
@@ -122,10 +122,10 @@ else if ($_GET['action']=='delete' && is_numeric($_GET['cart_id']) && $_GET['car
             custom_uploader.on('select', function() {
                 attachment = custom_uploader.state().get('selection').toJSON();
                 var imageIDList = '';
-                $.each(attachment, function(key,singleImage){
+                jQuery.each(attachment, function(key,singleImage){
                     imageIDList += (imageIDList.length==0) ? singleImage.id:','+singleImage.id;
                 });
-                $('#cart_images').val(imageIDList);
+                jQuery('#cart_images').val(imageIDList);
             });
 
             //Open the uploader dialog
@@ -136,7 +136,7 @@ else if ($_GET['action']=='delete' && is_numeric($_GET['cart_id']) && $_GET['car
 
     function NewCartRow()
     {
-        $('#gruopnamebox').show();
+        jQuery('#gruopnamebox').show();
     }
     function editCartRow()
     {
@@ -144,7 +144,7 @@ else if ($_GET['action']=='delete' && is_numeric($_GET['cart_id']) && $_GET['car
     }
     function cancelNewRow()
     {
-        $('#gruopnamebox').hide();
+        jQuery('#gruopnamebox').hide();
     }
     function cancelUpdateRow()
     {

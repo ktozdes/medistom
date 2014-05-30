@@ -17,7 +17,55 @@ if(!class_exists("Appointzilla")) {
         // This function accept appointment date and staff Id and return current date business hours or close day info.
         function GetBusiness($AppointmentDate, $StaffId) {
             // for admin flexibility
-            return $BusinessHours = array('Biz_start_time' => "12:00 AM", 'Biz_end_time' => "11:59 PM");
+            global $wpdb;
+            //today's business day
+            $weekday = date('l', strtotime($AppointmentDate)); // retuning the name of the day like: Monday
+
+            //get staff details
+            $StaffTableName = $wpdb->prefix."ap_staff";
+            $StaffData = $wpdb->get_row("SELECT `name` , `staff_hours` FROM `$StaffTableName` WHERE `id` = '$StaffId'", OBJECT);
+
+            //check today's staff hours
+            $StaffHours = unserialize($StaffData->staff_hours);
+            //print_r($StaffHours);
+
+            if(is_array($StaffHours)) {
+                if($weekday == 'Monday') {
+                    $Biz_start_time = $StaffHours['monday_start_time'];
+                    $Biz_end_time = $StaffHours['monday_end_time'];
+                }
+                if($weekday == 'Tuesday') {
+                    $Biz_start_time = $StaffHours['tuesday_start_time'];
+                    $Biz_end_time = $StaffHours['tuesday_end_time'];
+                }
+                if($weekday == 'Wednesday') {
+                    $Biz_start_time = $StaffHours['wednesday_start_time'];
+                    $Biz_end_time = $StaffHours['wednesday_end_time'];
+                }
+                if($weekday == 'Thursday') {
+                    $Biz_start_time = $StaffHours['thursday_start_time'];
+                    $Biz_end_time = $StaffHours['thursday_end_time'];
+                }
+                if($weekday == 'Friday') {
+                    $Biz_start_time = $StaffHours['friday_start_time'];
+                    $Biz_end_time = $StaffHours['friday_end_time'];
+                }
+                if($weekday == 'Saturday') {
+                    $Biz_start_time = $StaffHours['saturday_start_time'];
+                    $Biz_end_time = $StaffHours['saturday_end_time'];
+                }
+                if($weekday == 'Sunday') {
+                    $Biz_start_time = $StaffHours['sunday_start_time'];
+                    $Biz_end_time = $StaffHours['sunday_end_time'];
+                }
+                return $BusinessHours = array('Biz_start_time' => $Biz_start_time, 'Biz_end_time' => $Biz_end_time);
+            } else {
+                //if staff hours not set then us current day business hours
+                //fetch today's business hours
+                $BusinessTableName = $wpdb->prefix . "ap_business_hours";
+                $BusinessName = $wpdb->get_row("SELECT * FROM `$BusinessTableName` WHERE `day` = '$weekday' ");
+                return $BusinessHours = array('Biz_start_time' => $BusinessName->start_time, 'Biz_end_time' => $BusinessName->end_time,);
+            }
         }
 
 
@@ -491,6 +539,59 @@ if(!class_exists("Appointzilla")) {
             unset($EventNextTimes);
             unset($AllSlotTimesList);
             return $DisableSlotsTimes;
+        }
+        function isCurrentDateActive($staffID,$date)
+        {
+            global $wpdb;
+            $EventTable = $wpdb->prefix."ap_events";
+            $FindAllEvents = "SELECT * FROM `$EventTable` ORDER BY `start_date` DESC";
+            $AllEvents = $wpdb->get_results($FindAllEvents, ARRAY_A);
+            foreach($AllEvents as $singleEvent){
+                $staffIDs = unserialize($singleEvent[staff_id]);
+                $eventStart = DateTime::createFromFormat('Y-m-d', $singleEvent[start_date]);
+                $eventEnd = DateTime::createFromFormat('Y-m-d', $singleEvent[end_date]);
+                $thisDate = DateTime::createFromFormat('d-m-Y', $date);
+                if ($singleEvent[repeat]=='N'){
+                    if (in_array($staffID,$staffIDs)==true && $eventStart>=$thisDate && $eventEnd<=$thisDate && $singleEvent[allday]==1){
+                        return false;
+                    }
+                }
+            }
+            $BusinessHours = $this->GetBusiness($date,$staffID);
+            if($BusinessHours['Biz_start_time'] != 'none' && $BusinessHours['Biz_end_time'] != 'none') {
+                $timeSlots = $this->getActiveTimeSlots($staffID, $thisDate->format('Y-m-d'), $BusinessHours['Biz_start_time'], $BusinessHours['Biz_end_time']);
+                if (count($timeSlots)<1)
+                    return false;
+            }
+            return true;
+        }
+        function getActiveTimeSlots($staffID, $date, $startTime, $endTime)
+        {
+            global $wpdb;
+            $timeSlots = array();
+            for($i = strtotime($startTime); $i<strtotime($endTime); $i += 1800){
+                $timeSlots[] =  $i;
+            }
+            $AppointmentTableName = $wpdb->prefix."ap_appointments";
+            $AllAppointmentsData = $wpdb->get_results("SELECT * FROM `$AppointmentTableName` WHERE `staff_id` = '$staffID' AND `date` = '$date' AND `recurring` LIKE 'no' AND `status` != 'cancelled' ");
+            foreach($AllAppointmentsData as $Appointment) {
+                foreach($timeSlots as $key=>$singleTime) {
+                    if ($singleTime>=strtotime( $Appointment->start_time ) && $singleTime<=strtotime( $Appointment->end_time )){
+                        unset($timeSlots[$key]);
+                    }
+                }
+            }
+            $EventTableName = $wpdb->prefix."ap_events";
+            $EventsData = $wpdb->get_results("SELECT * FROM `$EventTableName` WHERE str_to_date('$date','%Y-%m-%d') BETWEEN str_to_date(`start_date`,'%Y-%m-%d') AND str_to_date(`end_date`,'%Y-%m-%d')",ARRAY_A);
+            foreach($EventsData as $event) {
+                $staffIDs = unserialize($event[staff_id]);
+                foreach($timeSlots as $key=>$singleTime) {
+                    if (($singleTime<strtotime($event[start_time]) || $singleTime>=strtotime($event[end_time])) && in_array($staffID,$staffIDs)==true){
+                        unset($timeSlots[$key]);
+                    }
+                }
+            }
+            return $timeSlots;
         }
     }
 }

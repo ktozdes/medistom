@@ -31,7 +31,7 @@
             <tr>
 				<th><?php _e('Phone','appointzilla'); ?></th>
                 <td><strong>:</strong></td>
-                <td><input type="text" name="client_phone" id="client_phone" value="<?php if($UpdateClientDetail) echo $UpdateClientDetail->phone; ?>" maxlength="12"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Phone Number.','appointzilla'); ?>" ><i  class="icon-question-sign"></i></a></td>
+                <td><input type="text" name="client_phone" id="client_phone" value="<?php if($UpdateClientDetail) echo $UpdateClientDetail->phone; ?>"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Phone Number.','appointzilla'); ?>" ><i  class="icon-question-sign"></i></a></td>
 			</tr>
             <tr>
 				<th><?php _e('Address','appointzilla'); ?></th>
@@ -671,12 +671,6 @@
 				if (client_phone== "") {
 					jQuery("#client_phone").after('<span class="error">&nbsp;<br><strong> <?php _e('Phone Number cannot be blank.','appointzilla'); ?></strong></span>');
 					return false;
-				} else {
-					var client_phone = isNaN(client_phone);
-					if(client_phone== true) {
-						jQuery("#client_phone").after('<span class="error">&nbsp;<br><strong><?php _e('Invalid value.','appointzilla'); ?></strong></span>');
-						return false;
-					}
 				}
 			}
 			else if ($('.question_group').val()==''){

@@ -60,7 +60,7 @@
                                 <span id="<?php echo $removecln; ?>"><strong><?php echo date($TimeFormat, $singleTime); ?></strong></span>
                             </div>
                         <?php }?>
-                </div>  <!-----time slot list end ------->
+                        </div>  <!-----time slot list end ------->
                 <!-- button and message box-->
                 <div style="float:left; width:100%;">
                     <?php
