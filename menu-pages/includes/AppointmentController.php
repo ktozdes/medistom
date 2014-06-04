@@ -15,6 +15,7 @@ class AppointmentController
         global $wpdb;
         $appointment_table  = $wpdb->prefix . "ap_appointments";
         $staff_table_name   = $wpdb->prefix . "ap_staff";
+        $diagnosis_table   = $wpdb->prefix . "ap_diagnosis";
         $AppointmentDetails = $wpdb->get_row("SELECT * FROM `$appointment_table` WHERE $appointment_table.`id` ='$params[appointmentID]'",ARRAY_A);
         ?>
         <table width="100%" class="table table-hover" >
@@ -49,7 +50,22 @@ class AppointmentController
                     </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('staff Name.', 'appointzilla'); ?>" ><i class="icon-question-sign"></i></a>
                 </td>
             </tr>
-
+            <tr>
+                <th scope="row"><strong><?php _e('Diagnosis', 'appointzilla'); ?></strong></th>
+                <td><strong>:</strong></td>
+                <td>
+                    <select id="diagnosisID" name="diagnosisID">
+                        <option value="" <?php echo ($AppointmentDetails[diagnosis_id] == '' || $AppointmentDetails[diagnosis_id] == '0' ) ? "selected":'';?>></option>
+                        <?php //get all service list
+                        global $wpdb;
+                        $diagnosisList = $wpdb->get_results("select * from $diagnosis_table",ARRAY_A);
+                        foreach($diagnosisList as $diagnosis) { ?>
+                            <option value="<?php echo $diagnosis[diagnosis_id]; ?>"
+                                <?php echo ($AppointmentDetails[diagnosis_id] == $diagnosis[diagnosis_id] ) ? "selected":'';  ?> ><?php echo $diagnosis[diagnosis_name]; ?></option>
+                        <?php } ?>
+                    </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Diagnosis.', 'appointzilla'); ?>" ><i class="icon-question-sign"></i></a>
+                </td>
+            </tr>
             <tr>
                 <th scope="row"><strong><?php _e('Phone', 'appointzilla'); ?></strong></th>
                 <td><strong>:</strong></td>
@@ -151,7 +167,7 @@ class AppointmentController
                         <input type="text" name="discount[<?php echo $service->id; ?>]" value="<?php echo ($service->discount!=null)?$service->discount:$service->percentage_ammount;?>" style="max-width:100px;"/>
                     </td>
                     <td class="button-column">
-                        <input type="checkbox" name="selected[<?php echo $service->id; ?>]" <?php echo ($service->checkbox_id!=null)?'checked="checked"':''?>/>
+                        <input type="checkbox" class="checkbox_<?php echo $service->id; ?>" name="selected[<?php echo $service->id; ?>]" <?php echo ($service->checkbox_id!=null)?'checked="checked"':''?>/>
                     </td>
                 </tr>
             <?php } ?>

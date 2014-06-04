@@ -62,6 +62,9 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
     $AppointmentController->getPaymentTab(array(appointmentID=>$appointmentID));
     exit();
 }?>
+<div id="ajax-loading-container">
+    <img src="<?php echo plugins_url('/appointment-calendar-premium/menu-pages/images/big-loading.gif');?>"/>
+</div>
 <div class="bs-docs-example tooltip-demo jquery-tab">
     <?php $DateFormat = (get_option('apcal_date_format') == '') ? "d-m-Y" : get_option('apcal_date_format');
     if(isset($_GET['updateid'])) {
@@ -111,23 +114,22 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
     </form>
     <?php } ?>
 
+    <?php
+    if($TimeFormat == 'h:i') {
+        $ATimePickerFormat = "hh:mm TT"; $Tflag = 'true';
+    }
+    if($TimeFormat == 'H:i') {
+        $ATimePickerFormat = "hh:mm"; $Tflag = 'false';
+    }?>
     <!--validation js lib-->
     <script src="<?php echo plugins_url('/js/jquery.min.js', __FILE__); ?>" type="text/javascript"></script>
 
     <script type="text/javascript">
-    <?php
-        if($TimeFormat == 'h:i') {
-            $ATimePickerFormat = "hh:mm TT"; $Tflag = 'true';
-        }
-        if($TimeFormat == 'H:i') {
-            $ATimePickerFormat = "hh:mm"; $Tflag = 'false';
-        }
-    ?>
     jQuery(document).ready(function () {
         jQuery('.jquery-tab').tabs();
         //filter change
         jQuery('.filter_row select').change(function(){
-            jQuery('#messagebox').html(jQuery(this).val());
+            //jQuery('#messagebox').html(jQuery(this).val());
             filterTable(this);
         });
         jQuery('.filter_row input').keyup(function(){
@@ -161,9 +163,28 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
             });
 
         });
+    });
+    jQuery('#diagnosisID').change(function() {
+        if (jQuery(this).val()=='')
+            return false;
+        jQuery('#ajax-loading-container').show();
+        var data = {
+            'action': 'get_diagnosis_service_ids',
+            'diagnosis_id': jQuery(this).val()
+        };
 
-        // update appointment validation
-        jQuery('#updateppointments').click(function() {
+        // since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
+        jQuery.get(ajaxurl, data, function(response) {
+            jQuery('#ajax-loading-container').hide();
+            var tempArray = jQuery.parseJSON(response);
+            jQuery('input[type=checkbox]').prop('checked', false);
+            jQuery.each(tempArray, function(key,val){
+                jQuery('input.checkbox_'+val).prop('checked', true);
+            });
+        });
+    });
+    // update appointment validation
+    jQuery('#updateppointments').click(function() {
 
             jQuery(".error").hide();
             //start-date appname appemail serviceid appphone start_time end_time start_date
@@ -248,7 +269,6 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
                 return false;
             }
         });
-    });
 
     function filterTable(thisFilter)
     {

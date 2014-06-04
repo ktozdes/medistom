@@ -237,6 +237,7 @@ $AppointmentsTable_sql = "CREATE TABLE IF NOT EXISTS `$AppointmentsTableName` (
   `email` varchar(256) NOT NULL,
   `service_id` int(11) NOT NULL,
   `staff_id` int(11) NOT NULL,
+  `diagnosis_id` int(11) NOT NULL,
   `cabinet_id` int(11) NOT NULL,
   `phone` varchar(20) NOT NULL,
   `start_time` varchar(10) NOT NULL,
@@ -1048,3 +1049,21 @@ $CouponsCodesTableSQL = "CREATE TABLE IF NOT EXISTS `$CouponsCodesTable` (
 PRIMARY KEY (`id`)
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
 $wpdb->query($CouponsCodesTableSQL);
+
+
+$diagnosisTable = $wpdb->prefix . "ap_diagnosis";
+$ReminderTable_sql = "CREATE TABLE `$diagnosisTable` (
+`diagnosis_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+`diagnosis_name` VARCHAR( 200 ) NOT NULL ,
+`diagnosis_note` TEXT
+)DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
+$wpdb->query($ReminderTable_sql);
+
+
+$ReminderTable = $wpdb->prefix . "ap_diagnosis_service";
+$ReminderTable_sql = "CREATE TABLE `$ReminderTable` (
+`diagnosis_service_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+`diagnosis_id` INT NOT NULL ,
+`service_id` INT NOT NULL
+)DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
+$wpdb->query($ReminderTable_sql);

@@ -18,7 +18,21 @@ function InstallScript() {
 
 // Translate all text & labels of plugin ###
 add_action('plugins_loaded', 'LoadPluginLanguage');
- 
+
+add_action( 'wp_ajax_get_diagnosis_service_ids', 'get_diagnosis_service_ids_callback' );
+
+function get_diagnosis_service_ids_callback() {
+    global $wpdb; // this is how you get access to the database
+    $diagnosis_service_table    = $wpdb->prefix . "ap_diagnosis_service";
+    $diagnosisServiceList = $wpdb->get_results("SELECT service_id FROM $diagnosis_service_table WHERE diagnosis_id=$_GET[diagnosis_id]",ARRAY_A);
+    $selectedServices = array();
+    foreach($diagnosisServiceList as $key=>$singleService){
+        $selectedServices[] = $singleService[service_id];
+    }
+    echo json_encode($selectedServices);
+
+    die(); // this is required to return a proper result
+}
 function LoadPluginLanguage() {
     load_plugin_textdomain('appointzilla', FALSE, dirname( plugin_basename(__FILE__)).'/languages/' );
 }
@@ -41,6 +55,8 @@ function appointment_calendar_menu() {
     $SubMenu4 = add_submenu_page( 'appointment-calendar', __('Services', 'appointzilla'), __('Services', 'appointzilla'), 'administrator', 'service', 'display_service_page' );
     // manage Service Page
     $SubMenu5 = add_submenu_page( '', 'Manage Service', '', 'administrator', 'manage-service', 'display_manage_service_page' );
+
+    $SubMenu31 = add_submenu_page( 'appointment-calendar', __('Diagnosis', 'appointzilla'), __('Diagnosis', 'appointzilla'), 'administrator', 'diagnosis', 'display_diagnosis_page' );
 
     // Staff Page
     $SubMenu6 = add_submenu_page( 'appointment-calendar', 'Staffs', __('Staffs', 'appointzilla'), 'administrator', 'staff', 'display_staff_page' );
@@ -131,6 +147,7 @@ function appointment_calendar_menu() {
     add_action( 'admin_print_styles-' . $SubMenu24, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu25, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu30, 'other_pages_css_js' );
+    add_action( 'admin_print_styles-' . $SubMenu31, 'other_pages_css_js' );
 
 }// end of menu function
 
@@ -230,6 +247,10 @@ add_action( 'wp', 'shortcode_detect' );
  //service page
  function display_service_page() {
      require_once("menu-pages/service.php");
+ }
+ //diagnosis page
+ function display_diagnosis_page() {
+     require_once("menu-pages/diagnosis.php");
  }
  //manage service page
  function display_manage_service_page() {
