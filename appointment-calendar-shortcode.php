@@ -47,14 +47,24 @@ function appointment_calendar_shortcode() {
 
     global $wpdb;
     $AppointmentTableName = $wpdb->prefix . "ap_appointments";
+    $client_table = $wpdb->prefix . "ap_clients";
+    $staff_table = $wpdb->prefix . "ap_staff";
     $EventTableName = $wpdb->prefix."ap_events";
 
     $current_month_first_date = date("Y-m-01");
     $laod_recurring_from = date("Y-m-d", strtotime("-3 month", strtotime($current_month_first_date)));  //only for recurring app
 
     //fetch all normal appointments
-    $FetchAllApps_sql = "select `name`, `start_time`, `end_time`, `date` FROM `$AppointmentTableName` WHERE `recurring` = 'no' AND `date` >= '$current_month_first_date' AND `status` != 'cancelled'";
-
+    $filterQuery = '';
+    $filterCabinetID ='';
+    if (isset($_POST[bycabinet]) && $_POST[bycabinet]>0){
+        $filterQuery = "AND cabinet_id = $_POST[bycabinet]";
+        $filterCabinetID = $_POST[bycabinet];
+    }
+    $FetchAllApps_sql = "select $client_table.`name` as name, $staff_table.`name` as staff_name, `start_time`, `end_time`, `date` FROM `$AppointmentTableName`
+        INNER JOIN $client_table on $client_table.id = $AppointmentTableName.client_id
+        INNER JOIN $staff_table on $staff_table.id = $AppointmentTableName.staff_id
+    WHERE `recurring` = 'no' $filterQuery AND `date` >= '$current_month_first_date' AND `status` != 'cancelled'";
     //fetch all recurring appointments
     $FetchAllRApps_sql = "select * FROM `$AppointmentTableName` WHERE `recurring` = 'yes' AND `date` >= '$current_month_first_date' AND `recurring_st_date` >= '$laod_recurring_from' AND `status` != 'cancelled'";
 
@@ -235,7 +245,7 @@ function appointment_calendar_shortcode() {
                         $date = "$y-$m-$d";
                         $date = str_replace("-",", ", $date); ?>
                         {
-                            title: "<?php _e('Booked', 'appointzilla'); ?>",
+                            title: "<?php echo $single->name; ?>",
                             start: new Date(<?php echo "$date, $start"; ?>),
                             end: new Date(<?php echo "$date, $end"; ?>),
                             allDay: false,
@@ -511,8 +521,12 @@ function appointment_calendar_shortcode() {
             jQuery('#AppFirstModal').show();
             jQuery('#AppSecondModal').hide();
         });
+        jQuery('#bycabinet').change(function(){
+            jQuery('#filter_form').submit();
+        });
 
     });
+
    jQuery.datepicker.formatDate("<?php echo $DPFormat; ?>", new Date());
     //Modal Form Works
     function LoadSecondModal() {
@@ -901,8 +915,21 @@ function appointment_calendar_shortcode() {
                 } ?>
             </strong>
         </button>
-        </button>
     </div>
+    <form method="post" id="filter_form">
+        <select name="bycabinet" id="bycabinet">
+            <option value=""><?php _e('All Cabinets', 'appointzilla'); ?></option>
+            <?php
+            global $wpdb;
+            $CabinetTableName = $wpdb->prefix . "ap_cabinets";
+            $AllCabinet = $wpdb->get_results("SELECT * FROM `$CabinetTableName`", ARRAY_A);
+            if($AllCabinet) {
+                foreach($AllCabinet as $singleCabinet) { ?>
+                <option value="<?php echo $singleCabinet[cabinet_id]; ?>" <?php if($filterCabinetID == $singleCabinet[cabinet_id]) echo "selected"; ?>>&nbsp;&nbsp;<?php echo ucwords($singleCabinet[cabinet_name]); ?></option><?php
+                }
+            } ?>
+        </select>
+    </form>
 
     <div id='messagebox'>
     </div>

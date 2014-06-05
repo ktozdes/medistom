@@ -6,6 +6,8 @@ if($TimeFormat == '') $TimeFormat = "H:i";
 
 global $wpdb;
 $AppointmentTableName = $wpdb->prefix."ap_appointments";
+$client_table = $wpdb->prefix."ap_clients";
+$staff_table = $wpdb->prefix."ap_staff";
 $EventTableName = $wpdb->prefix."ap_events";
 $Select = 0;
 
@@ -24,21 +26,21 @@ $Current_Month_First_Date = strtotime(date("Y-m-01"));
 $Load_From_Last_Month = date("Y-m-d", strtotime("-1 month", $Current_Month_First_Date));
 //only for recurring app
 $Load_Recurring_From_Last_Month = date("Y-m-d", strtotime("-6 month", $Current_Month_First_Date));
-
-if(isset($_POST['filterbystaff']) && isset($_POST['bystaff'])) {
-    $StaffId = $_POST['bystaff'];
-    $Select = $StaffId;
-    //appointment sql
-    $FetchAllApps_sql = "select `id`, `name`, `start_time`, `end_time`, `date` FROM `$AppointmentTableName` WHERE `recurring` = 'no' AND `staff_id` = '$StaffId' AND `date` >= '$Load_From_Last_Month'";
-
-    //recurring app sql
-    $FetchAllRApps_sql = "select * FROM `$AppointmentTableName` WHERE `recurring` = 'yes' AND `staff_id` = '$StaffId' AND `recurring_st_date` >= '$Load_Recurring_From_Last_Month'";
-} else {
-    $FetchAllApps_sql = "select `id`, `name`, `start_time`, `end_time`, `date` FROM `$AppointmentTableName` WHERE `recurring` = 'no' AND `date` >= '$Load_From_Last_Month'";
-
-    $FetchAllRApps_sql = "select * FROM `$AppointmentTableName` WHERE `recurring` = 'yes' AND `recurring_st_date` >= '$Load_Recurring_From_Last_Month'";
+if(isset($_POST['filterbystaff']) && $_POST[bystaff]>0) {
+    $SelectStaff = $_POST[bystaff];
+    $query = " AND `staff_id` = '$_POST[bystaff]'";
+}
+if(isset($_POST['filterbystaff']) && $_POST[bycabinet]>0) {
+    $SelectCabinet = $_POST[bycabinet];
+    $query .= " AND `cabinet_id` = '$_POST[bycabinet]'";
 }
 
+$FetchAllApps_sql = "select $AppointmentTableName.`id`, $client_table.`name` as name, $staff_table.name as staff_name, `start_time`, `end_time`, `date` FROM `$AppointmentTableName`
+    INNER JOIN $staff_table on $staff_table.id = $AppointmentTableName.staff_id
+    INNER JOIN $client_table on $client_table.id = $AppointmentTableName.client_id
+WHERE `recurring` = 'no' $query AND `date` >= '$Load_From_Last_Month'";
+
+$FetchAllRApps_sql = "select * FROM `$AppointmentTableName` WHERE `recurring` = 'yes' $query AND `recurring_st_date` >= '$Load_Recurring_From_Last_Month'";
 //Normal Event
 $FetchAllEvent_sql = "SELECT `id`, `name`, `start_time`, `end_time`, `start_date`, `end_date`, `repeat` FROM `$EventTableName` WHERE `repeat` = 'N' AND `start_date` >= '$Load_From_Last_Month' ";
 
@@ -85,7 +87,6 @@ jQuery(document).ready(function() {
             $AllAppointments = $wpdb->get_results($FetchAllApps_sql, OBJECT);
             if($AllAppointments) {
                 foreach($AllAppointments as $single) {
-                    $title = $single->name;
                     $start = date("H, i", strtotime($single->start_time));
                     $end= date("H, i", strtotime($single->end_time));
 
@@ -98,14 +99,14 @@ jQuery(document).ready(function() {
                     $url = "?page=update-appointment&viewid=".$single->id."&from=calendar"; ?>
                     {
                         id :'<?php echo $single->id; ?>',
-                        title: "<?php _e("Booked By",'appointzilla'); echo ": ".ucwords($title); ?>",
+                        title: "<?php _e("Client",'appointzilla'); echo ": ".ucwords($single->name); ?>, <?php _e("Staff",'appointzilla'); echo ": ".ucwords($single->staff_name); ?>",
                         start: new Date(<?php echo "$date, $start"; ?>),
                         end: new Date(<?php echo "$date, $end"; ?>),
                         url: "<?php echo $url; ?>",
                         allDay: false,
                         backgroundColor : "#1FCB4A",
                         textColor: "black",
-                        description: "appointment",
+                        description: "appointment"
                     }, <?php
                 }
             }
@@ -155,7 +156,7 @@ jQuery(document).ready(function() {
                                 allDay: false,
                                 backgroundColor : "<?php if($single->staff_id =='1') echo "#DD75DD"; else echo "#6A6AFF"; ?>",
                                 textColor: "",
-                                description: "appointment",
+                                description: "appointment"
                             }, <?php
                         }// end of date calculation for
                     } else {
@@ -184,7 +185,7 @@ jQuery(document).ready(function() {
                                     allDay: false,
                                     backgroundColor : "<?php if($single->staff_id =='1') echo "#DD75DD"; else echo "#6A6AFF"; ?>",
                                     textColor: "",
-                                    description: "appointment",
+                                    description: "appointment"
                                 }, <?php
                                 $i = $i+1;
                             } while(strtotime($end_date) != strtotime($NextDate));
@@ -231,7 +232,7 @@ jQuery(document).ready(function() {
                         allDay: false,
                         backgroundColor : "#FF7575",
                         textColor: "black",
-                        description: "timeoff",
+                        description: "timeoff"
                     }, <?php
                 }
             }
@@ -296,7 +297,7 @@ jQuery(document).ready(function() {
                                 allDay: false,
                                 backgroundColor : "#FF7575",
                                 textColor: "black",
-                                description: "timeoff",
+                                description: "timeoff"
                             }, <?php
                         }
                     } else { // end of if
@@ -327,7 +328,7 @@ jQuery(document).ready(function() {
                                 allDay: false,
                                 backgroundColor : "#FF7575",
                                 textColor: "black",
-                                description: "timeoff",
+                                description: "timeoff"
                             }, <?php
                             $i = $i+1;
                         } while(strtotime($enddate) != strtotime($NextDate));
@@ -459,6 +460,7 @@ function LoadSecondModal() {
         }
     });
 }
+
 function LoadSecondModal2() {
     jQuery('#AppThirdModal').hide();
     jQuery('#buttondiv').show();
@@ -472,8 +474,47 @@ function loadfirstmodal() {
     jQuery('#next1').show();
 }
 
-//load second modal on back2 click
+//load third modal on-click next2
+function loadthirdmodal() {
+    //validation on second modal form
+    var AppDate = jQuery('#AppDate').val();
+    var StaffId = jQuery('#StaffId').val();
+    var CabinetID = jQuery('#CabinetID').val();
+    var Start_Time =  jQuery('.start_time:checked').val();
+    var RepeatUnit = 'NULL';
+    if (Start_Time==null){
+        alert("<?php echo __('Please, Select Stat Time.', 'appointzilla'); ?>");
+        return false;
+    }
+    var ThirdData = "AppDate=" + AppDate + "&StaffId=" + StaffId + "&StartTime=" + Start_Time  + "&CabinetID=" + CabinetID;
 
+    var url = "?page=appointment-calendar";
+    jQuery('#buttondiv').hide();
+    jQuery('#loading').show();
+    jQuery.ajax({
+        dataType : 'html',
+        type: 'GET',
+        url : url,
+        cache: false,
+        data : ThirdData,
+        complete : function() {  },
+        success: function(data) {
+            data = jQuery(data).find('div#AppThirdModalData');
+            jQuery('#loading').hide();
+            jQuery('#AppSecondModal').hide();
+            jQuery('#AppThirdModal').show();
+            jQuery('#AppThirdModal').html(data);
+        }
+    });
+}
+
+
+function CloseModelform() {
+    jQuery('#AppForthModalFinal').hide();
+    jQuery('#AppSecondModalData').hide();
+    jQuery('#AppThirdModalData').hide();
+    location.href = location.href;
+}
 
 // hide all
 function hideAll() {
@@ -587,7 +628,7 @@ function loadstartdate() {
     jQuery(function(){
         jQuery('#re_start_date').datepicker({
             minDate: 0,
-            dateFormat: "<?php echo $DPFormat; ?>",
+            dateFormat: "<?php echo $DPFormat; ?>"
         });
     });
  }
@@ -596,51 +637,9 @@ function loadenddate() {
     jQuery(function(){
         jQuery('#re_end_date').datepicker({
             minDate: 0,
-            dateFormat: "<?php echo $DPFormat; ?>",
+            dateFormat: "<?php echo $DPFormat; ?>"
         });
     });
-}
-
-//load third modal on-click next2
-function loadthirdmodal() {
-    //validation on second modal form
-    var AppDate = jQuery('#AppDate').val();
-    var StaffId = jQuery('#StaffId').val();
-    var CabinetID = jQuery('#CabinetID').val();
-    var Start_Time =  jQuery('.start_time:checked').val();
-    var RepeatUnit = 'NULL';
-    if (Start_Time==null){
-        alert("<?php echo __('Please, Select Stat Time.', 'appointzilla'); ?>");
-        return false;
-    }
-    var ThirdData = "AppDate=" + AppDate + "&StaffId=" + StaffId + "&StartTime=" + Start_Time  + "&CabinetID=" + CabinetID;
-
-    var url = "?page=appointment-calendar";
-    jQuery('#buttondiv').hide();
-    jQuery('#loading').show();
-    jQuery.ajax({
-        dataType : 'html',
-        type: 'GET',
-        url : url,
-        cache: false,
-        data : ThirdData,
-        complete : function() {  },
-        success: function(data) {
-            data = jQuery(data).find('div#AppThirdModalData');
-            jQuery('#loading').hide();
-            jQuery('#AppSecondModal').hide();
-            jQuery('#AppThirdModal').show();
-            jQuery('#AppThirdModal').html(data);
-        }
-    });
-}
-
-
-function CloseModelform() {
-    jQuery('#AppForthModalFinal').hide();
-    jQuery('#AppSecondModalData').hide();
-    jQuery('#AppThirdModalData').hide();
-    location.href = location.href;
 }
 
 function staffChanged()
@@ -848,7 +847,7 @@ tr th
     <form action="" method="post" name="filter-form">
         <table width="100%" border="0">
             <tr>
-                <th width="16%" valign="top" scope="row">&nbsp;</th>
+                <td width="16%" valign="top" scope="row">&nbsp;</td>
                 <td width="11%">&nbsp;</td>
                 <td width="14%">&nbsp;</td>
                 <td width="21%"></td>
@@ -856,8 +855,8 @@ tr th
                 <td width="28%"><img src="<?php echo plugins_url( '/appointment-calendar-premium/images/green.jpg'); ?>" />&nbsp;<strong><?php _e('Appointments', 'appointzilla'); ?></strong></td>
             </tr>
             <tr>
-                <th valign="top" scope="row"><strong><?php _e('Filter Appointments By Staff', 'appointzilla'); ?></strong></th>
-                <td>&nbsp;</td>
+                <td valign="top" scope="row"><strong><?php _e('Filter By Staff', 'appointzilla'); ?></strong></td>
+                <td><strong><?php _e('Filter By Cabinet', 'appointzilla'); ?></strong></td>
                 <td colspan="2" align="center"><button name="addappointment" class="btn btn-primary" type="button" id="addappointment">
                         <i class="icon-calendar icon-white"></i> <?php if(isset($AllCalendarSettings['booking_button_text'])) {
                             echo $AllCalendarSettings['booking_button_text'];
@@ -870,7 +869,7 @@ tr th
                 <td><img src="<?php echo plugins_url( '/appointment-calendar-premium/images/blue.jpg'); ?>" />&nbsp;<strong><?php _e('Recurring Appointments', 'appointzilla'); ?></strong></td>
             </tr>
             <tr>
-                <th scope="row">
+                <td scope="row">
                     <select name="bystaff" id="bystaff">
                         <option value="NULL"><?php _e('Select Staff', 'appointzilla'); ?></option>
                         <?php
@@ -879,20 +878,31 @@ tr th
                         $AllStaff = $wpdb->get_results("SELECT * FROM `$StaffTableName`", OBJECT);
                         if($AllStaff) {
                             foreach($AllStaff as $Staff) { ?>
-                            <option value="<?php echo $Staff->id; ?>" <?php if($Select == $Staff->id) echo "selected"; ?>>&nbsp;&nbsp;<?php echo ucwords($Staff->name); ?></option><?php
+                            <option value="<?php echo $Staff->id; ?>" <?php if($SelectStaff == $Staff->id) echo "selected"; ?>>&nbsp;&nbsp;<?php echo ucwords($Staff->name); ?></option><?php
                             }
                         } ?>
                     </select>
-                </th>
-                <td></td>
+                </td>
+                <td><select name="bycabinet" id="bycabinet">
+                        <option value="NULL"><?php _e('Select Cabinet', 'appointzilla'); ?></option>
+                        <?php
+                        global $wpdb;
+                        $CabinetTableName = $wpdb->prefix . "ap_cabinets";
+                        $AllCabinet = $wpdb->get_results("SELECT * FROM `$CabinetTableName`", OBJECT);
+                        if($AllCabinet) {
+                            foreach($AllCabinet as $singleCabinet) { ?>
+                            <option value="<?php echo $singleCabinet->cabinet_id; ?>" <?php if($SelectCabinet == $singleCabinet->cabinet_id) echo "selected"; ?>>&nbsp;&nbsp;<?php echo ucwords($singleCabinet->cabinet_name); ?></option><?php
+                            }
+                        } ?>
+                    </select></td>
                 <td>&nbsp;</td>
                 <td>&nbsp;</td>
                 <td>&nbsp;</td>
                 <td><img src="<?php echo plugins_url( '/appointment-calendar-premium/images/pink.jpg'); ?>" />&nbsp;<strong><?php _e('Appointments (Default Staff Assigned)', 'appointzilla'); ?></strong></td>
             </tr>
             <tr>
-                <th scope="row"><button name="filterbystaff" id="filterbystaff" class="btn btn-small btn-danger" type="submit"><i class="icon-ok icon-white"></i> <?php _e('Apply', 'appointzilla'); ?></button></th>
-                <td>&nbsp;</td>
+                <td scope="row"></td>
+                <td style="text-align:right;"><button name="filterbystaff" id="filterbystaff" class="btn btn-small btn-danger" type="submit"><i class="icon-ok icon-white"></i> <?php _e('Apply', 'appointzilla'); ?></button></td>
                 <td>&nbsp;</td>
                 <td>&nbsp;</td>
                 <td>&nbsp;</td>
