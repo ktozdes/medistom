@@ -22,6 +22,7 @@ function appointment_calendar_shortcode() {
     require_once( plugin_dir_path( __FILE__ ) . 'calendar/tc_calendar.php');
     // include appointzilla class file
     require_once('appointzilla-class.php');
+    require_once(plugin_dir_path( __FILE__ ) . 'menu-pages/includes/AppointmentController.php');
 
     $AppointZilla = new Appointzilla();
     $CurrentDate = date("Y-m-d", time());
@@ -897,7 +898,9 @@ function appointment_calendar_shortcode() {
         }
     }
     </script>
-
+    <div id="ajax-loading-container">
+        <img src="<?php echo plugins_url('/appointment-calendar-premium/menu-pages/images/big-loading.gif');?>"/>
+    </div>
     <!---Display Booking Instruction--->
     <?php if($AllCalendarSettings['apcal_booking_instructions']) { ?>
     <div id="bookinginstructions" align="center">
@@ -1215,284 +1218,95 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
     <!---saving appointments--->
     <?php if( isset($_POST['Action'])) {
         $Action = $_POST['Action'];
-        if($Action == "BookAppointment") {
-            $StaffId = $_POST['StaffId'];
-            $AppDateNo = $_POST['AppDate'];
-            $cabinetID = $_POST['CabinetId'];
-            $clientID = $_POST['clientID'];
+        if($Action == "BookAppointment") {?>
+		<div id="AppForthModalData">
+		<div class="apcal_modal" id="AppForthModal" style="z-index:10000;">
+			<div class="apcal_modal-info">
+		<?php
+            $AppointmentController = new AppointmentController();
+			$_POST['ClientFirstName'] = sanitize_text_field($_POST['ClientFirstName']).' '.sanitize_text_field($_POST['ClientLastName']);
+            $_POST['AppDate'] = date("Y-m-d", strtotime($_POST['AppDate']));
 
-            $ClientEmail = $_POST['ClientEmail'];
-            $ClientNote = $_POST['ClientNote'];
-            $ClientName = sanitize_text_field($_POST['ClientFirstName']).' '.sanitize_text_field($_POST['ClientLastName']);
-            $ClientPhone = $_POST['ClientPhone'];
-            $ClientAddress = $_POST['ClientAddress'];
-            $ClientOccupation = $_POST['ClientOccupation'];
-            $AppointmentKey = md5(date("F j, Y, g:i a"));
-            $AppDate = date("Y-m-d", strtotime($AppDateNo));
-            $StartTime = $_POST['StartTime'];
-            $EndTime = $_POST['EndTime'];
-
-            //get cabinet name
-            $cabinetTableName = $wpdb->prefix . "ap_cabinets";
-            $cabinetRow = $wpdb->get_row("SELECT * FROM `$cabinetTableName` WHERE `cabinet_id` = '$cabinetID' ",ARRAY_A);
-
-            if(isset($AllCalendarSettings['apcal_new_appointment_status'])) {
-                $Status = $AllCalendarSettings['apcal_new_appointment_status'];
-            } else {
-                $Status = "pending";
-            }
-            $AppointmentBy = "user";
-            $Recurring = "no";
-            $RecurringType = "none";
-            $RecurringStartDate = $AppDate;
-            $RecurringEndDate = $AppDate;
-            $PaymentStatus = "unpaid";
-
-            global $wpdb;
-            $AppointmentsTable = $wpdb->prefix ."ap_appointments";
-            $CreateAppointments = "INSERT INTO `$AppointmentsTable` (`id` ,`name` ,`email` ,`service_id` ,`staff_id` ,`cabinet_id` ,`phone` ,`start_time` ,`end_time` ,`date` ,`note` , `appointment_key` ,`status` ,`recurring` ,`recurring_type` ,`recurring_st_date` ,`recurring_ed_date` ,`appointment_by`, `payment_status`) VALUES ('NULL', '$ClientName', '$ClientEmail', '0', '$StaffId','$cabinetID', '$ClientPhone', '$StartTime', '$EndTime', '$AppDate', '$ClientNote', '$AppointmentKey', '$Status', '$Recurring', '$RecurringType', '$RecurringStartDate', '$RecurringEndDate', '$AppointmentBy', '$PaymentStatus');";
-
-            if($wpdb->query($CreateAppointments)) {
-                $LastAppointmentId = mysql_insert_id(); ?>
-                <div id="AppForthModalData">
-                <?php global $wpdb;
-
-
-                $ClientTable = $wpdb->prefix."ap_clients";
-                $ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `email` = '$ClientEmail' OR (`name` like '%$ClientName%' AND `phone` like '$ClientPhone')");
-				if(count($ExistClientDetails)) {
-                    // update  exiting client deatils
-                    $ExistClientId = $ExistClientDetails->id;
-                    $LastClientId = $ExistClientId;
-                } else {
-                    // insert new client deatils
-                    $InsertClient = "INSERT INTO `$ClientTable` (`id` ,`name` ,`email` ,`phone`,address,occupation ,`note`) VALUES ('NULL', '$ClientName', '$ClientEmail', '$ClientPhone','$ClientAddress', '$ClientOccupation', '$ClientNote');";
-                    if($wpdb->query($InsertClient)) {
-                        $LastClientId = mysql_insert_id();
-                    }
-                }
-                $wpdb->update(
-                    $AppointmentsTable,
-                    array('client_id'=>$LastClientId),
-                    array(id=>$LastAppointmentId)
-                );
-
-                ?>
-
-
-                <div class="apcal_modal" id="AppForthModal" style="z-index:10000;">
-                <div class="apcal_modal-info">
-                    <div style="float:right; margin-top:5px; margin-right:10px;"></div>
-                    <div class="apcal_alert apcal_alert-info">
-                        <p><?php _e('Thank You. Your appointment has been scheduled.', 'appointzilla'); ?></p>
-                </div><!--end modal-info-->
-                <div class="apcal_modal-body">
-                    <style>
-                        .table th, .table td {
-                            padding: 4px;;
-                        }
-                    </style>
-                    <strong><?php _e('Your Appointment Details', 'appointzilla'); ?></strong>
-                    <input type="hidden" id="appid" name="appid" value="<?php echo $LastAppointmentId; ?>" />
-                    <table width="100%" class="table">
-                        <tr>
-                            <th width="26%" scope="row"><?php _e('Name', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%"><?php echo ucwords($ClientName);  ?></td>
-                        </tr>
-                        <tr>
-                            <th width="26%" scope="row"><?php _e('Email', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%"><?php echo $ClientEmail; ?></td>
-                        </tr>
-                        <tr>
-                            <th width="26%" scope="row"><?php _e('Phone', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%"><?php echo $ClientPhone;  ?></td>
-                        </tr>
-                        <tr>
-                            <th width="26%" scope="row"><?php _e('Staff', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%">
-                                <?php $StaffTableName = $wpdb->prefix . "ap_staff";
-                                $StaffName = $wpdb->get_row("SELECT `name` FROM `$StaffTableName` WHERE `id` = '$StaffId' ");
-                                echo ucwords($StaffName->name); ?>
-                            </td>
-                        </tr><tr>
-                            <th width="26%" scope="row"><?php _e('Cabinet', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%">
-                                <?php echo $cabinetRow['cabinet_name']; ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th width="26%" scope="row"><?php _e('Date', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%"><?php echo date($DateFormat, strtotime($AppDate));	?></td>
-                        </tr>
-                        <tr>
-                            <th width="26%" scope="row"><?php _e('Time', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%"><?php echo date($TimeFormat, strtotime($StartTime))." - ".date($TimeFormat, strtotime($EndTime));  ?></td>
-                        </tr>
-                        <tr>
-                            <th width="26%" scope="row"><?php _e('Status', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%"><?php echo _e(ucfirst($Status),'appointzilla'); ?></td>
-                        </tr>
-                            <?php
-                            //get service details for payment purpose & also check payment settings
-                            global $wpdb;
-                            $ServiceTableName = $wpdb->prefix . 'ap_services';
-                            $ServiceDetails = $wpdb->get_row("SELECT * FROM `$ServiceTableName` WHERE `id` = '$ServiceId'");
-                            $AcceptPayment = $ServiceDetails->accept_payment;
-                            $PaymentType = $ServiceDetails->payment_type;
-                            $ap_payment_email = get_option('ap_payment_email');
-                            $ap_payment_gateway_status = get_option('ap_payment_gateway_status');
-                            if($AcceptPayment == "yes" && $PaymentType == "full" && $ap_payment_email && $ap_payment_gateway_status == "yes") {
-                            ?>
-                        <tr>
-                            <th width="26%" scope="row"><?php _e('Coupon Code', 'appointzilla'); ?></th>
-                            <td width="1%"><strong>:</strong></td>
-                            <td width="73%">
-                                <div id="apply-coupon-div">
-                                    <input type="text" id="coupon-code" name="coupon-code" maxlength="15" style="width: 120px;">
-                                    <button id="apply-coupon" name="apply-coupon" class="apcal_btn apcal_btn-small apcal_btn-info" onclick="return ApplyCoupon();" style="margin-top: -10px;"><i class="icon-tags icon-white"></i> <?php _e('Apply', 'appointzilla'); ?></button>
-                                </div>
-
-                                <div id="loading-img" style="display:none;"><?php _e('Applying...', 'appointzilla'); ?><img src="<?php echo plugins_url("images/loading.gif", __FILE__); ?>" /></div>
-                                <div id="show-coupon-result" style="display:none;"></div>
-                            </td>
-                        </tr>
-                            <?php } ?>
-                        <tr>
-                            <td colspan="3">
-                                <?php $Check1 = 0; $Check2 = 0;  $Check3 = 0;
-                                /**
-                                 * Paypal Payment Process
-                                 **/
-                                //get service details for payment purpose
-                                global $wpdb;
-                                $ServiceTableName = $wpdb->prefix . 'ap_services';
-                                $ServiceDetails = $wpdb->get_row("SELECT * FROM `$ServiceTableName` WHERE `id` = '$ServiceId'");
-
-                                //get currency code
-                                $CurrencyId = get_option('cal_admin_currency');
-                                if($CurrencyId != '') {
-                                    $CurrencyTableName = $wpdb->prefix."ap_currency";
-                                    $CurrencyDetails = $wpdb->get_row("SELECT `code` FROM `$CurrencyTableName` WHERE `id` = '$CurrencyId'");
-                                    $CurrencyCode =  $CurrencyDetails->code;
-                                } else {
-                                    $CurrencyCode =  'USD';
-                                }
-
-                                $Protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://';
-                                $SuccessCurrentUrl = $Protocol.$_SERVER['SERVER_NAME'] . $_SERVER['REQUEST_URI'];
-                                $FailedCurrentUrl = $SuccessCurrentUrl."?&failed=failed&appointId=".$LastAppointmentId;
-
-                                //check payment is 'yes'
-                                if($ap_payment_gateway_status == 'yes') {
-
-                                    //check service is paid
-                                    if($ServiceDetails->accept_payment == 'yes') {
-                                        //check payment type
-                                        if($ServiceDetails->payment_type == 'percentage') {
-                                            $PayCost = $ServiceDetails->cost;
-                                            $percentage = $ServiceDetails->percentage_ammount;
-                                            $PayCost = ($PayCost * $percentage) /100;
-                                        } else {
-                                            $PayCost = $ServiceDetails->cost;
-                                        }
-
-                                        $ApPaymentEmail = get_option('ap_payment_email');
-                                        if($ApPaymentEmail) {
-                                            // default discount value
-                                            $DiscountRate = 0;
-
-                                            // Include the paypal library
-                                            require_once ('menu-pages/paypal-api/Scientechpaypal.php');
-                                            $ScientechPaypal = new Scientechpaypal();
-                                            $ScientechPaypal->TakePayment($ApPaymentEmail, $CurrencyCode, $SuccessCurrentUrl, $FailedCurrentUrl, $ServiceDetails->name, $PayCost, $LastAppointmentId, $DiscountRate);
-                                        } else {
-                                            $Check3 = 1;
-                                        }
-                                    } else {
-                                        $Check2 = 1;
-                                    }
-                                } else {
-                                    $Check1 = 1;
-                                }
-
-                                // send notification if any of check == 1
-                                if($Check1 || $Check2 || $Check3) { ?>
-                                    <a href="javascript:void(0)" class="apcal_btn apcal_btn" onclick="CloseModelform()" style="margin-left:80%"><i class="icon-ok"></i> <?php _e('Done', 'appointzilla'); ?></a>
-                                    <?php $BlogName =  get_bloginfo('name');
-                                    if($LastAppointmentId && $LastClientId) {
-                                        $AppId = $LastAppointmentId;
-                                        $ServiceId = $ServiceId;
-                                        $StaffId = $StaffId;
-                                        $ClientId = $LastClientId;
-                                        //include notification class
-                                        require_once('menu-pages/notification-class.php');
-                                        $Notification = new Notification();
-                                        $Notification->notifyadmin($Status, $AppId, $ServiceId, $StaffId, $ClientId, $BlogName, $DateFormat, $TimeFormat);
-                                        $Notification->notifyclient($Status, $AppId, $ServiceId, $StaffId, $ClientId, $BlogName, $DateFormat, $TimeFormat);
-                                        if(get_option('staff_notification_status') == 'on') {
-                                            $Notification->notifystaff($Status, $AppId, $ServiceId, $StaffId, $ClientId, $BlogName, $DateFormat, $TimeFormat);
-                                        }
-                                    }
-                                }
-
-                                //if status is approved then sync appointment
-                                if($Status == 'approved') {
-
-                                    //add service name with event title($name)
-                                    //$ServiceTable = $wpdb->prefix . "ap_services";
-                                    //$ServiceData = $wpdb->get_row("SELECT * FROM `$ServiceTable` WHERE `id` = '$ServiceId'");
-                                    //$name = $name."(".$ServiceData->name.")";
-
-                                    $CalData = get_option('google_caelndar_settings_details');
-                                    if($CalData['google_calendar_client_id'] != '' && $CalData['google_calendar_secret_key']  != '') {
-                                        $StartTime = date("H:i", strtotime($StartTime));
-                                        $EndTime = date("H:i", strtotime($EndTime));
-                                        $AppDate = date("Y-m-d", strtotime($AppDate));
-                                        $ClientNote = strip_tags($ClientNote);
-
-                                        $ClientId = $CalData['google_calendar_client_id'];
-                                        $ClientSecretId = $CalData['google_calendar_secret_key'];
-                                        $RedirectUri = $CalData['google_calendar_redirect_uri'];
-                                        require_once('menu-pages/google-appointment-sync-class.php');
-
-                                        //global $wpdb;
-                                        $AppointmentSyncTableName = $wpdb->prefix . "ap_appointment_sync";
-                                        // insert this appointment event on calendar
-                                        $GoogleAppointmentSync = new GoogleAppointmentSync($ClientId, $ClientSecretId, $RedirectUri);
-                                        $tag = "Appointment with: ";
-                                        $OAuth = $GoogleAppointmentSync->NormalSync($ClientName, $AppDate, $StartTime, $EndTime, $ClientNote, $tag);
-                                        //insert appintment sync details
-                                        $OAuth = serialize($OAuth);
-                                        $wpdb->query("INSERT INTO `$AppointmentSyncTableName` ( `id` , `app_id` , `app_sync_details` ) VALUES ( NULL , '$AppId', '$OAuth' );");
-                                    } // end of google calendar setting
-
-                                    //unset payment post variables
-                                    unset($_POST['address_status']); unset($_POST['payer_id']);
-
-                                } // end of sync appointment is approved
-                                ?>
-                                <div id="ex-pay-canceling-img" style="display:none;"><?php _e('Refreshing, Please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
-                                <div id="loading-staff" style="display:none;">
-                                    <?php _e('Loading Staff...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" />
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                </div>
-                </div>
+            $newAppointmentID = $AppointmentController->createAppointment($_POST);
+            if ($newAppointmentID>0):
+                $appointment_table = $wpdb->prefix . "ap_appointments";
+                $cabinetTableName = $wpdb->prefix . "ap_cabinets";
+                $StaffTableName = $wpdb->prefix . "ap_staff";
+                $singleAppointment = $wpdb->get_row("
+                    SELECT app.id, app.name, app.email, app.phone, app.start_time, app.end_time, app.note, app.date, $StaffTableName.name AS staff_name, $cabinetTableName.cabinet_name
+FROM $appointment_table AS app
+INNER JOIN $StaffTableName ON $StaffTableName.id = app.staff_id
+INNER JOIN $cabinetTableName ON $cabinetTableName.cabinet_id = app.cabinet_id
+WHERE app.id =$newAppointmentID ",ARRAY_A);?>
+			<div class="apcal_alert apcal_alert-info">
+				<p><?php _e('Thank You. Your appointment has been scheduled.', 'appointzilla'); ?></p>
+			</div><!--end modal-info-->
+			<div class="apcal_modal-body">
+				<style>
+					.table th, .table td {
+						padding: 4px;;
+					}
+				</style>
+				<strong><?php _e('Your Appointment Details', 'appointzilla'); ?></strong>
+				<input type="hidden" id="appid" name="appid" value="<?php echo $singleAppointment[id] ?>" />
+				<table width="100%" class="table">
+					<tr>
+						<th width="26%" scope="row"><?php _e('Name', 'appointzilla'); ?></th>
+						<td width="1%"><strong>:</strong></td>
+						<td width="73%"><?php echo ucwords($singleAppointment[name]);  ?></td>
+					</tr>
+					<tr>
+						<th width="26%" scope="row"><?php _e('Email', 'appointzilla'); ?></th>
+						<td width="1%"><strong>:</strong></td>
+						<td width="73%"><?php echo $singleAppointment[email]; ?></td>
+					</tr>
+					<tr>
+						<th width="26%" scope="row"><?php _e('Phone', 'appointzilla'); ?></th>
+						<td width="1%"><strong>:</strong></td>
+						<td width="73%"><?php echo $singleAppointment[phone];  ?></td>
+					</tr>
+					<tr>
+						<th width="26%" scope="row"><?php _e('Staff', 'appointzilla'); ?></th>
+						<td width="1%"><strong>:</strong></td>
+						<td width="73%">
+							<?php echo ucwords($singleAppointment[staff_name]); ?>
+						</td>
+					</tr><tr>
+						<th width="26%" scope="row"><?php _e('Cabinet', 'appointzilla'); ?></th>
+						<td width="1%"><strong>:</strong></td>
+						<td width="73%">
+							<?php echo $singleAppointment['cabinet_name']; ?>
+						</td>
+					</tr>
+					<tr>
+						<th width="26%" scope="row"><?php _e('Date', 'appointzilla'); ?></th>
+						<td width="1%"><strong>:</strong></td>
+						<td width="73%"><?php echo date($DateFormat, strtotime($singleAppointment[date]));	?></td>
+					</tr>
+					<tr>
+						<th width="26%" scope="row"><?php _e('Time', 'appointzilla'); ?></th>
+						<td width="1%"><strong>:</strong></td>
+						<td width="73%"><?php echo date($TimeFormat, strtotime($singleAppointment[start_time]))." - ".date($TimeFormat, strtotime($singleAppointment[end_time]));  ?></td>
+					</tr>
+					<tr>
+						<th width="26%" scope="row"><?php _e('Status', 'appointzilla'); ?></th>
+						<td width="1%"><strong>:</strong></td>
+						<td width="73%"><?php echo _e(ucfirst($singleAppointment[status]),'appointzilla'); ?></td>
+					</tr>
+				</table>
+			</div>
                 <?php
-            }//query if
+			else:?>
+			<div class="apcal_alert apcal_alert-info">
+				<p><?php _e('Sorry. Your appointment has not been scheduled.', 'appointzilla'); ?></p>
+			</div>
+            <?php endif;?>
+			</div>
+			</div>
+		</div>
+		<?php
         }
-    }// saving appointment if
+	}// saving appointment if
 
 
     // Payment success

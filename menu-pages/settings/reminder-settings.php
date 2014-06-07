@@ -10,7 +10,8 @@ if(isset($_GET['manageremindersettings']) == 'yes') {
             'ap_reminder_type' => $_POST['ap_reminder_type'],
             'ap_reminder_frequency' => $_POST['ap_reminder_frequency'],
             'ap_reminder_subject' => $_POST['ap_reminder_subject'],
-            'ap_reminder_body' => $_POST['ap_reminder_body']
+            'ap_reminder_body' => $_POST['ap_reminder_body'],
+            'ap_reminder_renewal' => $_POST['ap_reminder_renewal']
         );
         update_option('ap_reminder_details',$ReminderDetails);
         echo "<script>alert('".__('Reminder settings successfully saved','appointzilla')."')</script>";
@@ -24,7 +25,8 @@ if(isset($_GET['manageremindersettings']) == 'yes') {
             'ap_reminder_type' => $_POST['ap_reminder_type'],
             'ap_reminder_frequency' => $_POST['ap_reminder_frequency'],
             'ap_reminder_subject' => $_POST['ap_reminder_subject'],
-            'ap_reminder_body' => $_POST['ap_reminder_body']
+            'ap_reminder_body' => $_POST['ap_reminder_body'],
+            'ap_reminder_renewal' => $_POST['ap_reminder_renewal']
         );
         update_option('ap_reminder_details',$ReminderDetails);
         echo "<script>alert('".__('Reminder settings successfully updated','appointzilla')."')</script>";
@@ -67,6 +69,20 @@ if(isset($_GET['manageremindersettings']) == 'yes') {
                     ?>
                 </em>
             </td>
+        </tr>
+        <th scope="row"><?php _e('Appointment Renewal Reminder # month','appointzilla');?></th>
+        <td><strong>:</strong></td>
+        <td>
+            <em>
+                <?php
+                if($ReminderDetails['ap_reminder_renewal']) {
+                    echo $ReminderDetails['ap_reminder_renewal'];
+                }  else {
+                    echo _e('Not Available','appointzilla');
+                }
+                ?>
+            </em>
+        </td>
         </tr>
         <tr>
             <th scope="row"><?php _e('Reminder Frequency','appointzilla');?></th>

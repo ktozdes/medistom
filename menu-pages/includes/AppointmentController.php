@@ -10,6 +10,7 @@ class AppointmentController
         $this->dateFormat   = (get_option('apcal_date_format') == '') ? "d-m-Y" : get_option('apcal_date_format');
         $this->currency     = get_option('cal_admin_currency');
     }
+	
     public function getEditableMainAppointmentTab($params)
     {
         global $wpdb;
@@ -240,7 +241,72 @@ class AppointmentController
     <?php }
     }
 
-    public function getTotalPrice($appID)
+    public function createAppointment($params)
+	{
+		$AppointmentKey = md5(date("F j, Y, g:i a"));
+		if(isset($AllCalendarSettings['apcal_new_appointment_status'])) {
+			$Status = $AllCalendarSettings['apcal_new_appointment_status'];
+		} else {
+			$Status = "pending";
+		}
+		$AppointmentBy = "user";
+		$Recurring = "no";
+		$RecurringType = "none";
+		$PaymentStatus = "unpaid";
+		global $wpdb;
+		
+		$AppointmentsTable = $wpdb->prefix ."ap_appointments";
+		$reminder_table = $wpdb->prefix ."ap_reminders";
+		$client_table = $wpdb->prefix ."ap_clients";
+		
+		$CreateAppointments = "INSERT INTO `$AppointmentsTable` (`id` ,`name` ,`email` ,`staff_id` ,`cabinet_id` ,`phone` ,`start_time` ,`end_time` ,`date` ,`note` , `appointment_key` ,`status` ,`recurring` ,`recurring_type` ,`appointment_by`, `payment_status`) VALUES ('NULL', '$_POST[ClientFirstName]', '$_POST[ClientEmail]', '$_POST[StaffId]','$_POST[CabinetId]', '$_POST[ClientPhone]', '$_POST[StartTime]', '$_POST[EndTime]', '$_POST[AppDate]', '', '$AppointmentKey', '$Status', '$Recurring', '$RecurringType', '$AppointmentBy', '$PaymentStatus');";
+		if($wpdb->query($CreateAppointments)) {
+			$LastAppointmentId = mysql_insert_id();
+			$ClientTable = $wpdb->prefix."ap_clients";
+			$ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `email` = '".$_POST[ClientEmail]."' OR (`name` like '%".$_POST[ClientFirstName]."%'");
+			if(count($ExistClientDetails)) {
+				// update  exiting client deatils
+				$LastClientId = $ExistClientDetails->id;
+			} else {
+				// insert new client deatils
+				$InsertClient = "INSERT INTO `$ClientTable` (`id` ,`name` ,`email` ,`phone`,address,occupation ,`note`) VALUES ('NULL', '$_POST[ClientFirstName]', '$_POST[ClientEmail]', '$_POST[ClientPhone]','$_POST[ClientAddress_]', '$_POST[ClientOccupation]', '$_POST[ClientNote]');";
+				if($wpdb->query($InsertClient)) {
+					$LastClientId = mysql_insert_id();
+				}
+			}
+			$wpdb->update(
+				$AppointmentsTable,
+				array('client_id'=>$LastClientId),
+				array(id=>$LastAppointmentId)
+			);
+			//sending mail to staff
+            $clientData = $wpdb->get_row("SELECT * FROM $client_table WHERE id = $_POST[StaffId]",ARRAY_A);
+            $appDate = DateTime::createFromFormat('Y-m-d', $_POST[AppDate]);
+			add_filter( 'wp_mail_content_type', 'set_html_content_type' );
+
+			wp_mail( $clientData[email], __('New Appointment For Dental Service','appointzilla'),"
+			Уважаемый $clientData[name],
+			Ниже указано время вашего лечения.
+			<table>
+			<tr>
+				<td>".__('Date','appointzilla').':</td><td>'.$appDate->format($this->dateFormat).'</td>
+				<td>'.__('Time','appointzilla').':</td><td>'.$_POST[StartTime].' - '.$_POST[EndTime].'</td>
+			</tr>
+			</table>');
+
+			// Reset content-type to avoid conflicts -- http://core.trac.wordpress.org/ticket/23578
+			remove_filter( 'wp_mail_content_type', 'set_html_content_type' );
+
+			function set_html_content_type() {
+
+				return 'text/html';
+			}
+			return $LastAppointmentId;
+		}
+		return -1;
+	}
+	
+	public function getTotalPrice($appID)
     {
         global $wpdb;
         $appointment_service_table = $wpdb->prefix . "ap_appointment_service";

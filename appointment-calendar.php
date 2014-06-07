@@ -7,7 +7,8 @@
  * Author URI: http://www.appointzilla.com
  * Plugin URI: http://www.appointzilla.com
  */
-
+require_once('install-script.php');
+require_once('menu-pages/widget/AppointzillaWidgetController.php');
 //ini_set('error_reporting', !E_NOTICE & !E_WARNING);
 
 // Run 'Install' script on plugin activation ###
@@ -15,10 +16,18 @@ register_activation_hook( __FILE__, 'InstallScript' );
 function InstallScript() {
     require_once('install-script.php');
 }
-
 // Translate all text & labels of plugin ###
 add_action('plugins_loaded', 'LoadPluginLanguage');
 
+function LoadPluginLanguage() {
+    load_plugin_textdomain('appointzilla', FALSE, dirname( plugin_basename(__FILE__)).'/languages/' );
+}
+//!!!!!!!!widget!!!!!!
+add_action( 'widgets_init',  'initialize_widget');
+function initialize_widget()
+{
+    register_widget( 'AppointzillaWidgetController' );
+}
 add_action( 'wp_ajax_get_diagnosis_service_ids', 'get_diagnosis_service_ids_callback' );
 
 function get_diagnosis_service_ids_callback() {
@@ -33,12 +42,23 @@ function get_diagnosis_service_ids_callback() {
 
     die(); // this is required to return a proper result
 }
-function LoadPluginLanguage() {
-    load_plugin_textdomain('appointzilla', FALSE, dirname( plugin_basename(__FILE__)).'/languages/' );
+add_action( 'wp_ajax_remindment_reminded', 'remindment_reminded_callback' );
+
+function remindment_reminded_callback() {
+    global $wpdb; // this is how you get access to the database
+    $appointment_table = $wpdb->prefix . "ap_appointments";
+    $result = $wpdb->update($appointment_table,
+        array('recurring_type'=>'reminded'),
+        array(id =>$_GET[app_id])
+    );
+    echo $result;
+
+    die(); // this is required to return a proper result
 }
 
-// Admin dashboard Menu Pages For Booking Calendar Plugin
 add_action('admin_menu','appointment_calendar_menu');
+
+// Admin dashboard Menu Pages For Booking Calendar Plugin
 
 function appointment_calendar_menu() {
     //create new top-level menu 'appointment-calendar'
@@ -155,6 +175,7 @@ function calendar_css_js() {
     wp_register_script( 'jquery-custom',plugins_url('menu-pages/fullcalendar-assets-new/js/jquery-ui-1.8.23.custom.min.js', __FILE__), array('jquery'), true );
     wp_enqueue_script('full-calendar',plugins_url('/menu-pages/fullcalendar-assets-new/js/fullcalendar.min.js', __FILE__),array('jquery','jquery-custom'));
     wp_enqueue_script('datepicker-js',plugins_url('/menu-pages/datepicker-assets/js/jquery.ui.datepicker.js', __FILE__),array('jquery','jquery-custom'));
+    wp_enqueue_script('menu-js',plugins_url('/menu-pages/datepicker-assets/js/jquery.ui.menu.js', __FILE__),array('jquery','jquery-custom'));
     wp_enqueue_script('mask-js',plugins_url('/menu-pages/js/jquery.maskedinput-1.2.2.js', __FILE__),array('jquery'));
 
     wp_enqueue_style('bootstrap-css',plugins_url('/bootstrap-assets/css/bootstrap.css', __FILE__));
@@ -209,6 +230,7 @@ function shortcode_detect() {
             wp_enqueue_script('apcal-calendar',plugins_url('calendar/calendar.js', __FILE__));
             wp_enqueue_script('apcal-moment-min',plugins_url('calendar/moment.min.js', __FILE__));
             wp_enqueue_style('apcal-bootstrap-apcal',plugins_url('bootstrap-assets/css/bootstrap-apcal.css', __FILE__));
+            wp_enqueue_style('bootstrap',plugins_url('bootstrap-assets/css/bootstrap.css', __FILE__));
             wp_enqueue_style('apcal-fullcalendar-css',plugins_url('/menu-pages/fullcalendar-assets-new/css/fullcalendar.css', __FILE__));
             wp_enqueue_style('apcal-datepicker-css',plugins_url('/menu-pages/datepicker-assets/css/jquery-ui-1.8.23.custom.css', __FILE__));
             //font-awesome js n css

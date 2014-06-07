@@ -30,6 +30,15 @@
             </tr>
 
             <tr>
+                <th width="17%" align="right" scope="row"><?php _e('Appointment Renewal Reminder # month' ,'appointzilla'); ?></th>
+                <td width="2%" align="center"><strong>:</strong></td>
+                <td width="81%">
+                    <input name="ap_reminder_renewal" type="text" id="ap_reminder_renewal" value="<?php echo $ReminaderDetails['ap_reminder_renewal'];?>">
+                        &nbsp;<a href="#" rel="tooltip" title="<?php _e('Appointment Renewal Reminded after # Month' ,'appointzilla'); ?>" ><i class="icon-question-sign"></i></a>
+                </td>
+            </tr>
+
+            <tr>
                 <th width="17%" align="right" scope="row"><?php _e('Reminder Frequency' ,'appointzilla'); ?></th>
                 <td width="2%" align="center"><strong>:</strong></td>
                 <td width="81%">
@@ -39,12 +48,6 @@
                         <option value="1" <?php if($ap_reminder_frequency == '1') echo "selected"; ?>><?php _e('1 Day Before' ,'appointzilla'); ?></option>
                         <option value="2" <?php if($ap_reminder_frequency == '2') echo "selected"; ?>><?php _e('2 Day Before' ,'appointzilla'); ?></option>
                         <option value="3" <?php if($ap_reminder_frequency == '3') echo "selected"; ?>><?php _e('3 Day Before' ,'appointzilla'); ?></option>
-                        <!--<option value="4" <?php //if($ap_reminder_frequency == '4') echo "selected"; ?>><?php _e('4 Day Before' ,'appointzilla'); ?></option>
-                        <option value="5" <?php //if($ap_reminder_frequency == '5') echo "selected"; ?>><?php _e('5 Day Before' ,'appointzilla'); ?></option>
-                        <option value="6" <?php //if($ap_reminder_frequency == '6') echo "selected"; ?>><?php _e('6 Day Before' ,'appointzilla'); ?></option>
-                        <option value="daily" <?php //if($ap_reminder_frequency == 'daily') echo "selected"; ?>><?php _e('Daily' ,'appointzilla'); ?></option>
-                        <option value="weekly" <?php //if($ap_reminder_frequency == 'weekly') echo "selected"; ?>><?php _e('Weekly' ,'appointzilla'); ?></option>
-                        <option value="monthly" <?php //if($ap_reminder_frequency == 'monthly') echo "selected"; ?>><?php _e('Monthly' ,'appointzilla'); ?></option>-->
                     </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Reminder Frequency' ,'appointzilla'); ?>" ><i class="icon-question-sign"></i></a>
                 </td>
             </tr>

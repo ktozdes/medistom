@@ -23,10 +23,6 @@
             if($FindReminder->status == 'failure') {
                 $retries = $FindReminder->retries + 1;
             }
-
-            //get service details
-            $ServiceDetails = $wpdb->get_row("SELECT * FROM `$ServiceTable` WHERE `id` = '$Appointment->service_id' ");
-
             //get staff details
             $StaffDetails = $wpdb->get_row("SELECT * FROM `$StaffTable` WHERE `id` = '$Appointment->staff_id' ");
 
