@@ -52,7 +52,7 @@ function appointment_calendar_shortcode() {
     $staff_table = $wpdb->prefix . "ap_staff";
     $EventTableName = $wpdb->prefix."ap_events";
 
-    $current_month_first_date = date("Y-m-01");
+    $current_month_first_date = date("Y-m-d", mktime(0, 0, 0, date("m")-1, 1, date("Y")));
     $laod_recurring_from = date("Y-m-d", strtotime("-3 month", strtotime($current_month_first_date)));  //only for recurring app
 
     //fetch all normal appointments
@@ -65,7 +65,7 @@ function appointment_calendar_shortcode() {
     $FetchAllApps_sql = "select $client_table.`name` as name, $staff_table.`name` as staff_name, `start_time`, `end_time`, `date` FROM `$AppointmentTableName`
         INNER JOIN $client_table on $client_table.id = $AppointmentTableName.client_id
         INNER JOIN $staff_table on $staff_table.id = $AppointmentTableName.staff_id
-    WHERE `recurring` = 'no' $filterQuery AND `date` >= '$current_month_first_date' AND `status` != 'cancelled'";
+    WHERE (`recurring` = 'no' OR recurring='') $filterQuery AND `date` >= '$current_month_first_date' AND `status` != 'cancelled'";
     //fetch all recurring appointments
     $FetchAllRApps_sql = "select * FROM `$AppointmentTableName` WHERE `recurring` = 'yes' AND `date` >= '$current_month_first_date' AND `recurring_st_date` >= '$laod_recurring_from' AND `status` != 'cancelled'";
 

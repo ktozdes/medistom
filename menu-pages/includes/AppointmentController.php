@@ -241,6 +241,50 @@ class AppointmentController
     <?php }
     }
 
+    public function getMedicalCartTab($params)
+    {
+        global $wpdb;
+        $medical_cart_table         = $wpdb->prefix . "ap_medical_cart";
+        $medicalCartRows = $wpdb->get_results("SELECT * FROM $medical_cart_table
+        WHERE `medical_cart_appointment_id` = $params[appointmentID]",ARRAY_A);
+    if (count($medicalCartRows)>0){?>
+    <table width="100%" class="table table-hover">
+        <thead>
+        <tr>
+            <th width="6%"><?php _e('Date','appointzilla'); ?> </th>
+            <th width="6%"><?php _e('Code','appointzilla'); ?></th>
+            <th width="6%"><?php _e('Tooth','appointzilla'); ?></th>
+            <th width="26%"><?php _e('Note','appointzilla'); ?></th>
+            <th width="50%"><?php _e('Images','appointzilla'); ?></th>
+        </tr>
+        </thead>
+        <?php foreach($medicalCartRows as $key=>$singleRow):
+            $imageList = explode(',',$singleRow['medical_cart_image_ids']);?>
+            <tr>
+                <td><?php echo $singleRow['medical_cart_date']; ?></td>
+                <td><?php echo $singleRow['medical_cart_code']; ?></td>
+                <td><?php echo $singleRow['medical_cart_tooth']; ?></td>
+                <td><?php echo $singleRow['medical_cart_note']; ?></td>
+                <td><div="imglist">
+                    <?php foreach($imageList as $singleImage):
+                        $imgStuff = wp_get_attachment_image_src( $singleImage, 'full' );
+                        if ($imgStuff!=''):?>
+                            <a rel="fancybox-<?php echo $key;?>" class="fancybox-thumbs" href="<?php echo $imgStuff['0'];?>"><?php echo wp_get_attachment_image( $singleImage, array(64,64), 1 );?></a>
+                        <?php endif;?>
+                    <?php endforeach;?>
+            </tr>
+        <?php endforeach;?>
+    </table>
+    <?php }
+    else{?>
+        <div class="alert alert-warning"><?php _e('Cart was not created', 'appointzilla'); ?></div>
+    <?php }?>
+    <div id="medical_cart_action">
+        <a class="btn" href="?page=medical_cart&action=new&client_id=<?php echo $params[client_id]?>&appointment_id=<?php echo $params[appointmentID]?>"><i class="icon-plus icon-white"></i><?php _e('New Medical Info','appointzilla'); ?></a>
+    </div>
+    <?php
+    }
+
     public function createAppointment($params)
 	{
 		$AppointmentKey = md5(date("F j, Y, g:i a"));

@@ -423,7 +423,7 @@ $ClientsTable_sql = "CREATE TABLE IF NOT EXISTS `$ClientsTableName` (
 )DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
 $wpdb->query($ClientsTable_sql);
 
-$ClientQuesionaryTableName = $wpdb->prefix . "ap_clients_questions";
+$ClientQuesionaryTableName = $wpdb->prefix . "ap_questionary";
 $ClientsQuesionaryTable_sql = "CREATE TABLE IF NOT EXISTS `$ClientQuesionaryTableName` (
   `id` int( 11 ) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `question` varchar( 256 ) NOT NULL ,
@@ -432,14 +432,17 @@ $ClientsQuesionaryTable_sql = "CREATE TABLE IF NOT EXISTS `$ClientQuesionaryTabl
 )DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
 $wpdb->query($ClientsQuesionaryTable_sql);
 
-$ClientQuesionaryRelTableName = $wpdb->prefix . "ap_clients_questions_relationship";
+$ClientQuesionaryRelTableName = $wpdb->prefix . "ap_questionary_relationship";
 $ClientsQuesionaryRelTable_sql = "CREATE TABLE IF NOT EXISTS `$ClientQuesionaryRelTableName` (
   `id` int( 11 ) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `client_id` int( 11 ) NOT NULL,
+  `other_table_id` int( 11 ) NOT NULL,
   `question_id` int( 11 ) NOT NULL,
-  `value` varchar( 128 ) NOT NULL
+  `value` varchar( 128 ) NOT NULL,
+  `other_table_name` varchar( 50 ) DEFAULT 'medical_cart'
 )DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
 $wpdb->query($ClientsQuesionaryRelTable_sql);
+
+
 
 $CabinetTableName = $wpdb->prefix . "ap_cabinets";
 $CabinetTable_sql = "CREATE TABLE IF NOT EXISTS `$CabinetTableName` (
@@ -456,6 +459,29 @@ $CabinetStaffTable_sql = "CREATE TABLE IF NOT EXISTS `$CabinetStaffTableName` (
   `staff_id` int( 11 ) NOT NULL
 )DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
 $wpdb->query($CabinetStaffTable_sql);
+
+
+$MedicalCartTableName = $wpdb->prefix . "ap_medical_cart";
+$CabinetStaffTable_sql = "CREATE TABLE IF NOT EXISTS `$MedicalCartTableName` (
+  `medical_cart_id` int(11) NOT NULL AUTO_INCREMENT,
+  `medical_cart_date` varchar(20) NOT NULL,
+  `medical_cart_code` varchar(20) NOT NULL,
+  `medical_cart_tooth` int(11) NOT NULL,
+  `medical_cart_note` varchar(2000) NOT NULL,
+  `medical_cart_image_ids` varchar(500) NOT NULL,
+  `medical_cart_client_id` int(11) NOT NULL
+  PRIMARY KEY (`medical_cart_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=7 ;";
+$wpdb->query($MedicalCartTableName);
+
+$medical_cart_treatment = $wpdb->prefix . "ap_medical_cart_treatment";
+$medical_cart_treatment_sql = "CREATE TABLE IF NOT EXISTS `$medical_cart_treatment` (
+`medical_cart_treatment_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+`treatment_id` int(11) ,
+`medical_cart_id` int(11) ,
+`medical_cart_treatment_date` varchar(20) NOT NULL
+)DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
+$wpdb->query($medical_cart_treatment_sql);
 
 //9. create staff table
 $StaffTableName = $wpdb->prefix . "ap_staff";
@@ -1025,7 +1051,7 @@ $wpdb->query($AppointmentSyncTableName_sql);
 
 
 $ReminderTable = $wpdb->prefix . "ap_reminders";
-$ReminderTable_sql = "CREATE TABLE `$ReminderTable` (
+$ReminderTable_sql = "CREATE TABLE IF NOT EXISTS `$ReminderTable` (
 `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
 `app_id` INT NOT NULL ,
 `reminder_type` VARCHAR( 10 ) NOT NULL ,
@@ -1051,8 +1077,16 @@ PRIMARY KEY (`id`)
 $wpdb->query($CouponsCodesTableSQL);
 
 
+$diagnosisTable = $wpdb->prefix . "ap_treatment";
+$ReminderTable_sql = "CREATE TABLE IF NOT EXISTS `$diagnosisTable` (
+`treatment_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+`treatment_name` VARCHAR( 200 ) NOT NULL ,
+`analysis_note` TEXT
+)DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
+$wpdb->query($ReminderTable_sql);
+
 $diagnosisTable = $wpdb->prefix . "ap_diagnosis";
-$ReminderTable_sql = "CREATE TABLE `$diagnosisTable` (
+$ReminderTable_sql = "CREATE TABLE IF NOT EXISTS `$diagnosisTable` (
 `diagnosis_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
 `diagnosis_name` VARCHAR( 200 ) NOT NULL ,
 `diagnosis_note` TEXT
@@ -1060,10 +1094,10 @@ $ReminderTable_sql = "CREATE TABLE `$diagnosisTable` (
 $wpdb->query($ReminderTable_sql);
 
 
-$ReminderTable = $wpdb->prefix . "ap_diagnosis_service";
-$ReminderTable_sql = "CREATE TABLE `$ReminderTable` (
-`diagnosis_service_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
-`diagnosis_id` INT NOT NULL ,
+$ReminderTable = $wpdb->prefix . "ap_treatment_service";
+$ReminderTable_sql = "CREATE TABLE IF NOT EXISTS `$ReminderTable` (
+`treatment_service_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+`treatment_id` INT NOT NULL ,
 `service_id` INT NOT NULL
 )DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
 $wpdb->query($ReminderTable_sql);

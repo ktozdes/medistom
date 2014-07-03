@@ -1,10 +1,77 @@
 <!--validation js lib-->
+<?php
+if(isset($_POST['clientupdate'])) {
+    $result = array();
+    global $wpdb;
+    $client_up_id = $_POST['clientupdate'];
+    $table_client = $wpdb->prefix . "ap_clients";
+    $table_question_user = $wpdb->prefix . "ap_questionary_relationship";
+    $result = $wpdb->update(
+        $table_client,
+        array(
+            'name' => strip_tags($_POST['client_name']),
+            'email' => $_POST['client_email'],
+            'phone' => $_POST['client_phone'],
+            'address' => $_POST['address'],
+            'occupation' => $_POST['occupation'],
+            'note' => strip_tags($_POST['client_desc'])
+        ),
+        array(
+        'id' => $client_up_id
+        )
+    );
+    if($result!==false) {
+        foreach($_POST['question_id'] as $key=>$value){
+        $wpdb->delete(
+                $table_question_user,
+            array(other_table_id=>$client_up_id,
+                other_table_name=>'user_table',
+                value=>'on'
+            )
+        );
+        $wpdb->get_row("SELECT * FROM $table_question_user WHERE other_table_id= $client_up_id and question_id =$key AND other_table_name = 'user_table'");
+        if ($wpdb->num_rows>0 && $client_up_id>0 && $key>0){
+            $wpdb->update(
+                $table_question_user,
+                array(
+                    'value' => $value
+                ),
+                array(
+                    'other_table_id' => $client_up_id,
+                    'other_table_name' => 'user_table',
+                    'question_id' => $key,
+                )
+            );
+        }
+        else if ($wpdb->num_rows==0 && $client_up_id>0 && $key>0){
+            $wpdb->insert(
+                $table_question_user,
+                array(
+                    'other_table_id' => $client_up_id,
+                    'other_table_name' => 'user_table',
+                    'question_id' => $key,
+                    'value' => $value
+                ));
+        }
+        echo '<br/>'.$wpdb->last_query;
+
+        }
+        $result[message] = __('<span style="color:green">Client details successfully updated.</span>','appointzilla');
+    }
+    else{
+        $result[message] = __('<span style="color:red">Client details was not updated.</span>','appointzilla');
+    }
+}?>
+
 <script src="<?php echo plugins_url('/js/jquery.min.js', __FILE__); ?>" type="text/javascript"></script>
 <script src="<?php echo plugins_url('/jquery-ui-custom/js/jquery.ui.datepicker-ru.js', __FILE__); ?>" type="text/javascript"></script>
 <script src="<?php echo plugins_url('/jquery-ui-custom/js/jquery-ui-1.10.4.custom.min.js', __FILE__); ?>" type="text/javascript"></script>
 <link href="<?php echo plugins_url('/jquery-ui-custom/css/ui-lightness/jquery-ui-1.10.4.custom.min.css', __FILE__); ?>" type='text/css' media='all' />
 
 <div class="bs-docs-example tooltip-demo">
+    <div class="alert alert-success">
+        <?php echo $result[message];?>
+    </div>
     <?php global $wpdb;
     $DateFormat = get_option('apcal_date_format');
     // add new cliens and update clients
@@ -17,7 +84,7 @@
         </div>
 
         <form action="" method="post" name="client-manage">  <!--clint left box -->
-            <table width="100%" class="detail-view table table-striped table-condensed">
+        <table width="100%" class="detail-view table table-striped table-condensed">
             <tr>
 				<th width="15%"><?php _e('Name','appointzilla'); ?> </th>
                 <td width="4%"><strong>:</strong></td>
@@ -61,73 +128,42 @@
 				</td>
 			</tr>
           </table>
-		  <table width="100%" class="detail-view table table-striped table-condensed">
-		  <tr>
-			<td colspan="2"><h3><i class="fa fa-group"></i> <?php _e('Manage Questions','appointzilla'); ?></h3></td>
-			</tr>
-		  <?php
-		if ($updateclient=='new'){
-			$table_question 	 = $wpdb->prefix . "ap_clients_questions";
-			$groupList = $wpdb->get_results("
-			SELECT `id` as question_id, `question`, `type`, `group` FROM $table_question
-			order by `group`",ARRAY_A);
-		}
-		  //update user
-		else{
-			$table_question 	 = $wpdb->prefix . "ap_clients_questions";
-			$table_user 		 = $wpdb->prefix . "ap_clients";
-			$table_question_user = $wpdb->prefix . "ap_clients_questions_relationship";
-			$groupList = $wpdb->get_results("
-			SELECT $table_question.question, $table_question.type, $table_question.group,question_id, $table_question_user.value FROM $table_user
-				LEFT JOIN $table_question_user on $table_question_user.client_id = $table_user.id
-				LEFT JOIN $table_question on $table_question_user.question_id = $table_question.id
-			WHERE
-				$table_user.id = $updateclient
-			order by `group`",ARRAY_A);
-			if (count($groupList)<2){
-				$groupList = $wpdb->get_results("SELECT `id` as question_id, `question`, `type`, `group` FROM $table_question order by `group`",ARRAY_A);
-				foreach($groupList as $key=>$singleQuestion){
-					$table_question_user = $wpdb->prefix . "ap_clients_questions_relationship";
-					$wpdb->insert( 
-						$table_question_user, 
-						array(
-							'client_id' => $updateclient, 
-							'question_id' => $singleQuestion[question_id]
-						)
-					);
-				}
-			}
-			$groupList = $wpdb->get_results("
-			SELECT question, type, $table_question.id 'question_id', client_id, value, `group` FROM $table_question
-            LEFT JOIN $table_question_user on $table_question_user.question_id = $table_question.id
-            AND client_id = $updateclient ORDER BY `group`
-			",ARRAY_A);
-		}
-        //echo $wpdb->last_query;
-		$currentGroup = '';
-		foreach($groupList as $singleQuestion):?>
-		<?php if($currentGroup!=$singleQuestion['group']):?>
-			<tr>
-				<td colspan="2" style="background:#8291FF;"><h4><?php echo $singleQuestion['group'];?></h4></td>
-			</tr>
-		<?php endif;?>
-			<tr>
-				<th width="15%"><?php echo $singleQuestion['question'];?></th>
-				<td><?php if ($singleQuestion['type']=='date'):?>
-					<input type="text" class="datepicker date" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>" />
-				<?php elseif($singleQuestion['type']=='text'):?>
-					<input type="text" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>" class="numeric"/>
-				<?php elseif($singleQuestion['type']=='bit'):?>
-					<input type="checkbox" name="question_id[<?php echo $singleQuestion['question_id'];?>]" <?php echo $singleQuestion['value']=='on'?'checked="checked"':'';?>/>
-				<?php elseif($singleQuestion['type']=='numeric'):?>
-				<input type="text" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>"/>
-				<?php endif;?>
-				</td>
-			</tr>
-			<?php 
-		$currentGroup = $singleQuestion['group'];
-		endforeach;?>		  
-			<tr>
+
+        <h3><i class="fa fa-group"></i> <?php _e('Manage Questions','appointzilla'); ?></h3>
+		<table width="100%" class="detail-view table table-striped table-condensed">
+            <?php
+            $query = $updateclient!='new'?"AND other_table_id = $updateclient":"";
+            $questionary_table = $wpdb->prefix . "ap_questionary";
+            $questionary_rel_table = $wpdb->prefix . "ap_questionary_relationship";
+            $questionList= $wpdb->get_results("SELECT `group`, `question` ,  `value`, `type`, $questionary_table.id as question_id FROM `$questionary_table` LEFT JOIN $questionary_rel_table as ques_rel on ques_rel.question_id = $questionary_table.id $query
+                WHERE  personal = 1
+                ORDER BY `group`
+            ",ARRAY_A);
+            echo $wpdb->last_query;
+            foreach($questionList as $key=>$singleQuestion):?>
+            <?php if ($prevGroup != $singleQuestion[group]):?>
+            <tr>
+                <td colspan="2" style="background:#8291FF;"><h4><?php echo $singleQuestion['group'];?></h4></td>
+            </tr>
+            <?php endif;?>
+            <tr>
+                <td><?php echo $singleQuestion[question];?></td>
+                <td><?php echo $singleQuestion['question_id'].'----'.$singleQuestion['value'];
+                    if ($singleQuestion['type']=='date'):?>
+                        <input type="text" class="datepicker date" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>" />
+                    <?php elseif($singleQuestion['type']=='text'):?>
+                        <input type="text" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>" class="numeric"/>
+                    <?php elseif($singleQuestion['type']=='bit'):?>
+                        <input type="checkbox" name="question_id[<?php echo $singleQuestion['question_id'];?>]" <?php echo $singleQuestion['value']=='on'?'checked="checked"':'';?>/>
+                    <?php elseif($singleQuestion['type']=='numeric'):?>
+                        <input type="text" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>"/>
+                    <?php endif;?>
+                </td>
+            </tr>
+			<?php
+            $prevGroup = $singleQuestion[group];
+            endforeach;?>
+            <tr>
 				<td></td>
 				<td>
 			<?php if($updateclient=='new')
@@ -385,9 +421,9 @@
                 <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"> <h3> <?php _e('Client Questions','appointzilla'); ?> </h3></div>
                 <table width="100%" class="detail-view table table-striped table-condensed">
                     <?php
-					$table_question 	 = $wpdb->prefix . "ap_clients_questions";
+					$table_question 	 = $wpdb->prefix . "ap_questionary";
 					$table_user 		 = $wpdb->prefix . "ap_clients";
-					$table_question_user = $wpdb->prefix . "ap_clients_questions_relationship";
+					$table_question_user = $wpdb->prefix . "ap_questionary_relationship";
 					$groupList = $wpdb->get_results("
 					SELECT $table_question.question, $table_question.type, $table_question.group,question_id, $table_question_user.value FROM $table_user
 						LEFT JOIN $table_question_user on $table_question_user.client_id = $table_user.id
@@ -421,7 +457,7 @@
     }
 	if(isset($_GET['quesionary'])) {
         $updatequestion=$_GET['quesionary'];
-		$table_name = $wpdb->prefix . "ap_clients_questions";
+		$table_name = $wpdb->prefix . "ap_questionary";
 		
 		$groupList = $wpdb->get_results("SELECT * FROM `$table_name` where `group` not like '' group by `group`",ARRAY_A);
 		
@@ -445,8 +481,10 @@
 					<th width="15%"><?php _e('Question','appointzilla'); ?> </th>
 					<th width="4%"><?php _e('Type','appointzilla'); ?></th>
 					<th width="4%"><?php _e('Group','appointzilla'); ?></th>
+					<th width="4%"><?php _e('Global','appointzilla'); ?></th>
 				</tr>
-				<tr><td><input type="text" name="question" value="<?php echo $UpdateQuestionDetail['question'];?>"/></td>
+				<tr>
+                    <td><input type="text" name="question" value="<?php echo $UpdateQuestionDetail['question'];?>"/></td>
 					<td><select name="type">
 						<option value="text" <?php echo ($UpdateQuestionDetail['type']=='text')?'selected="selected"':'';?>><?php _e('Text','appointzilla');?></option>
 						<option value="int" <?php echo ($UpdateQuestionDetail['type']=='int')?'selected="selected"':'';?>><?php _e('Numeric','appointzilla');?></option>
@@ -460,6 +498,7 @@
 						<?php endforeach;?>
 						<option value="new"><?php _e('New','appointzilla');?></option>
 					</select></td>
+                    <td><input type="checkbox" name="personal" <?php echo $UpdateQuestionDetail['personal']=='on' ? 'checked="checked"' : '';;?>/></td>
 				</tr>
 				<tr>
 					<td colspan="2">
@@ -480,8 +519,9 @@
 		<table width="100%" class="detail-view table table-striped table-condensed">
 			<tr>
 				<th width="15%"><?php _e('Question','appointzilla'); ?> </th>
-				<th width="4%"><?php _e('Question Type','appointzilla'); ?></th>
-				<th width="4%"><?php _e('Question Group','appointzilla'); ?></th>
+				<th width="4%"><?php _e('Type','appointzilla'); ?></th>
+				<th width="4%"><?php _e('Group','appointzilla'); ?></th>
+				<th width="4%"><?php _e('Global','appointzilla'); ?></th>
 				<th width="4%"><?php _e('Action','appointzilla'); ?></th>
 			</tr>
 			<?php foreach($questionList as $key=>$singleQuestion):?>
@@ -489,6 +529,7 @@
 				<td><?php echo $singleQuestion['question']; ?></td>
 				<td><?php echo $singleQuestion['type']; ?></td>
 				<td><?php echo $singleQuestion['group']; ?></td>
+				<td><?php echo $singleQuestion['personal']==1 ? _e('Yes','appointzilla') : _e('No','appointzilla'); ?></td>
 				<td><a data-original-title="Update" rel="tooltip" href="?page=client-manage&quesionary=<?php echo $singleQuestion['id']; ?>&action=update"><i class="icon-pencil"></i></a><a data-original-title="Delete" rel="tooltip" href="?page=client-manage&quesionary=<?php echo $singleQuestion['id']; ?>&action=delete" onclick="return confirm('Do you want to delete this Question?')"><i class="icon-remove"></i></a>
 								
 				</td>
@@ -524,9 +565,9 @@
 			$new_user_id = $wpdb->insert_id;
 			if($new_user_id!==false) {
 				foreach($_POST['question_id'] as $key=>$value){
-					$table_question 	 = $wpdb->prefix . "ap_clients_questions";
+					$table_question 	 = $wpdb->prefix . "ap_questionary";
 					$table_user 		 = $wpdb->prefix . "ap_clients";
-					$table_question_user = $wpdb->prefix . "ap_clients_questions_relationship";
+					$table_question_user = $wpdb->prefix . "ap_questionary_relationship";
 					$wpdb->insert( 
 						$table_question_user, 
 						array(
@@ -542,86 +583,27 @@
             }
         }
     }
-
-
-    //update client
-    if(isset($_POST['clientupdate'])) {
-        global $wpdb;
-        $client_up_id = $_POST['clientupdate'];
-        $table_client = $wpdb->prefix . "ap_clients";
-		$result = $wpdb->update( 
-			$table_client, 
-			array(
-				'name' => strip_tags($_POST['client_name']),
-				'email' => $_POST['client_email'],
-				'phone' => $_POST['client_phone'],
-				'address' => $_POST['address'],
-				'occupation' => $_POST['occupation'],
-				'note' => strip_tags($_POST['client_desc'])
-			),
-			array(
-				'id' => $client_up_id
-			)
-		);
-		//echo '<br/>'.$wpdb->last_query;
-		if($result!==false) {
-            print_r($_POST['question_id']);
-			foreach($_POST['question_id'] as $key=>$value){
-				$table_question_user = $wpdb->prefix . "ap_clients_questions_relationship";
-                $wpdb->get_row("SELECT * FROM $table_question_user WHERE client_id= $client_up_id and question_id =$key ");
-                if ($wpdb->num_rows>0){
-                    $wpdb->update(
-                        $table_question_user,
-                        array(
-                            'value' => $value
-                        ),
-                        array(
-                            'client_id' => $client_up_id,
-                            'question_id' => $key,
-                        )
-                    );
-                }
-                else{
-                    $wpdb->insert(
-                        $table_question_user,
-                        array(
-                            'client_id' => $client_up_id,
-                            'question_id' => $key,
-                            'value' => $value
-                        )
-                    );
-                }
-				
-			}
-			//echo "<script>alert('".__('Client details successfully updated.','appointzilla')."');</script>";
-			//echo "<script>location.href='?page=client-manage&viewid=$client_up_id';</script>";
-		} else {
-			//echo "<script>alert('".__('Client details was not updated.','appointzilla')."');</script>";
-			//echo "<script>location.href='?page=client-manage&viewid=$client_up_id';</script>";
-		}
-    } 
 	// Add new question
     if(isset($_POST['questioncreate']) || isset($_POST['questionupdate'])) {
         global $wpdb;
-		echo '1';
         $question = strip_tags($_POST['question']);
         $group = strip_tags($_POST['group']);
+        $personal = strip_tags($_POST['personal']=='on') ? 1 : 0;
         $type = $_POST['type'];
-		
-        $question_table = $wpdb->prefix."ap_clients_questions";
+        $question_table = $wpdb->prefix."ap_questionary";
         if (is_numeric($_POST['questionupdate']) && isset($_POST['questionupdate'])){
 			$ExitsQuestion = $wpdb->get_row("UPDATE `$question_table` set `group` = '$group', `type` = '$type', `question` = '$question' WHERE `id` = '".$_POST['questionupdate']."'");
 			echo "<script>alert('".__('question successfully updated.','appointzilla')."')</script>";
 			echo "<script>location.href='?page=client-manage&quesionary=edit';</script>";
 		}
 		else{
-			$ExitsQuestion = $wpdb->get_row("SELECT * FROM `$question_table` WHERE `question` = '$question' AND `group`='$group' ");
+			$ExitsQuestion = $wpdb->get_row("SELECT * FROM `$question_table` WHERE `question` = '$question' AND `group`='$group'");
 			if($ExitsQuestion) {
 				echo "<script>alert('$question ".__('is already in the database.','appointzilla')."')</script>";
 			} else {
 				// insert new client deatils
-				$insert_client = "INSERT INTO `$question_table` (`question` ,`type`, `group`) VALUES ('$question', '$type', '$group');";
-				if($wpdb->query($insert_client)) {
+				$insert_client = "INSERT INTO `$question_table` (`question` ,`type`, `group`, personal) VALUES ('$question', '$type', '$group', '$personal');";
+                if($wpdb->query($insert_client)) {
 					echo "<script>alert('".__('New question successfully added.','appointzilla')."')</script>";
 					echo "<script>location.href='?page=client-manage&quesionary=edit';</script>";
 				}

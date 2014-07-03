@@ -1,5 +1,4 @@
 <?php
-include_once('includes/AppointmentController.php');
 global $wpdb;
 $TimeFormat = (get_option('apcal_time_format') == '')?"h:i" : get_option('apcal_time_format');
 $cal_admin_currency_id = get_option('cal_admin_currency');
@@ -7,6 +6,7 @@ $service_table              = $wpdb->prefix . "ap_services";
 $ServiceCategoryTable       = $wpdb->prefix . "ap_service_category";
 $appointment_table          = $wpdb->prefix . "ap_appointments";
 $appointment_service_table  = $wpdb->prefix . "ap_appointment_service";
+$medical_cart_table         = $wpdb->prefix . "ap_medical_cart";
 $payment_table              = $wpdb->prefix . "ap_payment_transaction";
 $appointmentID = isset($_GET[appointmentID])?$_GET[appointmentID]:'';
 $appointmentID = isset($_GET[updateid])?$_GET[updateid]:$appointmentID;
@@ -76,7 +76,7 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
         </div>
 
     <form action="" method="post"><!---update appointment form--->
-    <div id="messagebox"></div>
+    <div id="messagebox" class="alert"></div>
     <ul>
         <li><a href="#tab_cat_id-0"><?php _e('Appointment', 'appointzilla'); ?></a></li>
         <?php
@@ -87,6 +87,7 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
         <li><a href="#tab_cat_id-<?php echo $gruopname->id; ?>"><?php echo $gruopname->name; ?></a></li>
         <?php }?>
         <li><a href="#tab_cat_id-payment"><?php _e('Payment', 'appointzilla'); ?></a></li>
+        <li><a href="#tab_cat_id-medical-cart"><?php _e('Medical Cart', 'appointzilla'); ?></a></li>
     </ul>
     <div id="tab_cat_id-0">
             <?php $AppointmentController->getEditableMainAppointmentTab(array(appointmentID=>$appointmentID)) ?>
@@ -99,6 +100,9 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
     <?php } ?>
     <div id="tab_cat_id-payment">
         <?php $AppointmentController->getPaymentTab(array(appointmentID=>$appointmentID));?>
+    </div>
+    <div id="tab_cat_id-medical-cart">
+        <?php $AppointmentController->getMedicalCartTab(array(appointmentID=>$appointmentID,client_id=>$AppointmentDetails->client_id));?>
     </div>
     <table class="table" style="width: 100% ">
         <tr>
@@ -121,15 +125,12 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
     if($TimeFormat == 'H:i') {
         $ATimePickerFormat = "hh:mm"; $Tflag = 'false';
     }?>
-    <!--validation js lib-->
-    <script src="<?php echo plugins_url('/js/jquery.min.js', __FILE__); ?>" type="text/javascript"></script>
-
     <script type="text/javascript">
-    jQuery(document).ready(function () {
+    jQuery(document).ready(function ($) {
+
         jQuery('.jquery-tab').tabs();
         //filter change
         jQuery('.filter_row select').change(function(){
-            //jQuery('#messagebox').html(jQuery(this).val());
             filterTable(this);
         });
         jQuery('.filter_row input').keyup(function(){
@@ -163,7 +164,16 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
             });
 
         });
+
+        jQuery("a.fancybox-thumbs").fancybox({
+            helpers : {
+                thumbs : true,
+                theme : 'dark'
+            }
+        });
+
     });
+
     jQuery('#diagnosisID').change(function() {
         if (jQuery(this).val()=='')
             return false;
@@ -330,7 +340,7 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
     function newPayment(appointmentID)
     {
         var paymentAmount = jQuery('#new_payment input.amount').val();
-        jQuery('#loading').show();
+        jQuery('#ajax-loading-container').show();
         jQuery.ajax({
             dataType : 'html',
             type: 'GET',
@@ -339,7 +349,7 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
             data : 'action=new_payment&payment='+paymentAmount+'&appointmentID='+appointmentID,
             complete : function() {  },
             success: function(data) {
-                jQuery('#loading').hide();
+                jQuery('#ajax-loading-container').hide();
                 data = jQuery(data).find('div.ajax-payment-container');
                 jQuery('.payment_container').html(data);
             }
@@ -364,6 +374,101 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
             }
         });
     }
+
+    function newMedicalCartSave(appID)
+    {
+        if (jQuery('#medical_cart_date').val()==''){
+            jQuery("#medical_cart_date").after('<span class="error">&nbsp;<br><strong><?php _e('Cannot be blank.','appointzilla'); ?></strong></span>');
+            return false;
+        }
+        if (jQuery('#medical_cart_code').val()==''){
+            jQuery("#medical_cart_code").after('<span class="error">&nbsp;<br><strong><?php _e('Cannot be blank.','appointzilla'); ?></strong></span>');
+            return false;
+        }
+        if (jQuery('#medical_cart_tooth').val()==''){
+            jQuery("#medical_cart_tooth").after('<span class="error">&nbsp;<br><strong><?php _e('Cannot be blank.','appointzilla'); ?></strong></span>');
+            return false;
+        }
+
+        jQuery('#ajax-loading-container').show();
+
+        var data  = {
+            'action':'new_medical_cart_row',
+            'medical_cart_date':jQuery('#medical_cart_date').val(),
+            'medical_cart_code':jQuery('#medical_cart_code').val(),
+            'medical_cart_tooth':jQuery('#medical_cart_tooth').val(),
+            'medical_cart_image_ids':jQuery('#medical_cart_image_ids').val(),
+            'medical_cart_appointment_id':appID
+        };
+
+
+        // since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
+        jQuery.post(ajaxurl, data, function(response) {
+            jQuery('#ajax-loading-container').hide();
+            if (response>0){
+				jQuery('#messagebox').html('<?php _e('New Item Successfully Added.','appointzilla'); ?>');
+				jQuery('#messagebox').addClass('alert-success');
+				jQuery('#medical_cart_date').val('');
+				jQuery('#medical_cart_code').val('');
+				jQuery('#medical_cart_tooth').val('');
+				jQuery('#medical_cart_image_ids').val('');
+			}
+			else{
+				jQuery('#messagebox').html('<?php _e('New Item Was Not Added.','appointzilla'); ?>');
+				jQuery('#messagebox').removeClass('alert-success').addClass('alert-error');
+			}
+			jQuery('#messagebox').stop().fadeIn().delay(5000).fadeOut();
+		});
+    };
+
+    function cancelnewMedicalRow()
+    {
+        jQuery('.new_medical_row').hide();
+    }
+
+    function NewCartRow()
+    {
+        jQuery('.new_medical_row').show();
+    }
+    //image uploader
+    </script>
+    <script>
+    var custom_uploader;
+
+    jQuery('#upload_image_button, #upload_image').click(function(e) {
+
+        e.preventDefault();
+
+        //If the uploader object has already been created, reopen the dialog
+        if (custom_uploader) {
+            custom_uploader.open();
+            return;
+        }
+
+        //Extend the wp.media object
+        custom_uploader = wp.media.frames.file_frame = wp.media({
+            title: 'Choose Image',
+            button: {
+                text: 'Choose Image'
+            },
+            multiple: true
+        });
+
+        //When a file is selected, grab the URL and set it as the text field's value
+        custom_uploader.on('select', function() {
+            attachment = custom_uploader.state().get('selection').toJSON();
+            var imageIDList = '';
+            jQuery.each(attachment, function(key,singleImage){
+                imageIDList += (imageIDList.length==0) ? singleImage.id:','+singleImage.id;
+            });
+            jQuery('#medical_cart_image_ids').val(imageIDList);
+        });
+
+        //Open the uploader dialog
+        custom_uploader.open();
+
+    });
+
     </script>
 
 
@@ -432,11 +537,6 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
 
             //if status is approved then sync appointment
             if($status == 'approved') {
-
-                //add service name with event title($name)
-                //$ServiceTable = $wpdb->prefix . "ap_services";
-                //$ServiceData = $wpdb->get_row("SELECT * FROM `$ServiceTable` WHERE `id` = '$serviceid'");
-                //$name = $name."(".$ServiceData->name.")";
 
                 $CalData = get_option('google_caelndar_settings_details');
                 if($CalData['google_calendar_client_id'] != '' && $CalData['google_calendar_secret_key']  != '') {
@@ -554,6 +654,7 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
             <li><a href="#tab_cat_id-0"><?php _e('Appointment', 'appointzilla'); ?></a></li>
             <li><a href="#tab_cat_id-1"><?php _e('Services', 'appointzilla'); ?></a></li>
             <li><a href="#tab_cat_id-2"><?php _e('Payment', 'appointzilla'); ?></a></li>
+            <li><a href="#tab_cat_id-3"><?php _e('Medical Cart', 'appointzilla'); ?></a></li>
         </ul>
         <div id="tab_cat_id-0">
         <table width="100%" class="table" ><!---update appointment form--->
@@ -654,7 +755,6 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
             </tr>
         </table>
         </div>
-
         <div id="tab_cat_id-1">
         <?php
         $total = $AppointmentController->getTotalPrice($AppId);
@@ -697,7 +797,7 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
             </table>
     <?php }
     else{?>
-        <div><?php _e('No Service Selected', 'appointzilla'); ?></div>
+        <div  class="alert alert-warning"><?php _e('No Service Selected', 'appointzilla'); ?></div>
     <?php } ?>
     </div>
         <div id="tab_cat_id-2">
@@ -739,7 +839,44 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
                 </table>
             <?php }
             else{?>
-                <div><?php _e('No Service Selected', 'appointzilla'); ?></div>
+                <div  class="alert alert-warning"><?php _e('No Payment', 'appointzilla'); ?></div>
+            <?php } ?>
+        </div>
+        <div id="tab_cat_id-3">
+            <?php
+            $medicalCartRows = $wpdb->get_results("SELECT * FROM $medical_cart_table
+        WHERE `medical_cart_appointment_id` = $AppId",ARRAY_A);
+            if (count($medicalCartRows)>0){?>
+            <table width="100%" class="detail-view table table-striped table-condensed medical_cart_list">
+                <thead>
+                <tr>
+                    <th width="6%"><?php _e('Date','appointzilla'); ?> </th>
+                    <th width="6%"><?php _e('Code','appointzilla'); ?></th>
+                    <th width="6%"><?php _e('Tooth','appointzilla'); ?></th>
+                    <th width="26%"><?php _e('Note','appointzilla'); ?></th>
+                    <th width="50%"><?php _e('Images','appointzilla'); ?></th>
+                </tr>
+                </thead>
+                <?php foreach($medicalCartRows as $key=>$singleRow):
+                $imageList = explode(',',$singleRow['medical_cart_image_ids']);?>
+                <tr>
+                    <td><?php echo $singleRow['medical_cart_date']; ?></td>
+                    <td><?php echo $singleRow['medical_cart_code']; ?></td>
+                    <td><?php echo $singleRow['medical_cart_tooth']; ?></td>
+                    <td><?php echo $singleRow['medical_cart_note']; ?></td>
+                    <td><div="imglist">
+                        <?php foreach($imageList as $singleImage):
+                        $imgStuff = wp_get_attachment_image_src( $singleImage, 'full' );
+                        if ($imgStuff!=''):?>
+                        <a rel="fancybox-<?php echo $key;?>" class="fancybox-thumbs" href="<?php echo $imgStuff['0'];?>"><?php echo wp_get_attachment_image( $singleImage, array(64,64), 1 );?></a>
+                    <?php endif;?>
+                    <?php endforeach;?>
+                </tr>
+                <?php endforeach;?>
+            </table>
+            <?php }
+            else{?>
+                <div class="alert alert-warning"><?php _e('Cart was not created', 'appointzilla'); ?></div>
             <?php } ?>
         </div>
         <div>
@@ -753,8 +890,5 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
             </table>
         </div>
     <?php } ?>
-    <!--time-picker js -->
-    <script src="<?php echo plugins_url('/timepicker-assets/js/jquery-1.7.2.min.js', __FILE__); ?>" type="text/javascript"></script>
-    <script src="<?php echo plugins_url('/timepicker-assets/js/jquery-ui.min.js', __FILE__); ?>" type="text/javascript"></script>
     <script src="<?php echo plugins_url('/timepicker-assets/js/jquery-ui-timepicker-addon.js', __FILE__); ?>" type="text/javascript"></script>
 </div>

@@ -1,55 +1,55 @@
 <?php
-$DiagnosisController = new DiagnosisController();
-if (count($_POST)>1 && $_POST[new_diagnosis]==1){
-    $result = $DiagnosisController->createNewDiagnosis($_POST);
+$TreatmentController = new TreatmentController();
+if (count($_POST)>1 && $_POST[new_treatment]==1){
+    $result = $TreatmentController->createNewTreatment($_POST);
     if ($result>0){
-        $message = '<div id="message" class="updated below-h2"><p>'.__("Diagnosis was saved",'appointzilla').'</div>';
+        $message = '<div id="message" class="updated below-h2"><p>'.__("Treatment was saved",'appointzilla').'</div>';
     }
     else if ($result == -1){
-        $message = '<div id="message" class="updated below-h2"><p>'.__("Diagnosis was not saved",'appointzilla').'</div>';
+        $message = '<div id="message" class="updated below-h2"><p>'.__("Treatment was not saved",'appointzilla').'</div>';
     }
     else if ($result == -2){
-        $message = '<div id="message" class="updated below-h2"><p>'.__("Diagnosis with such name already exists",'appointzilla').'</div>';
+        $message = '<div id="message" class="updated below-h2"><p>'.__("Treatment with such name already exists",'appointzilla').'</div>';
     }
 }
-else if (count($_POST)>1 && $_POST[update_diagnosis]==1){
-    $result = $DiagnosisController->updateDiagnosis($_POST);
+else if (count($_POST)>1 && $_POST[update_treatment]==1){
+    $result = $TreatmentController->updateTreatment($_POST);
     if ($result>0){
-        $message = '<div id="message" class="updated below-h2"><p>'.__("Diagnosis was updated",'appointzilla').'</div>';
+        $message = '<div id="message" class="updated below-h2"><p>'.__("Treatment was updated",'appointzilla').'</div>';
     }
     else if ($result == -1){
-        $message = '<div id="message" class="updated below-h2"><p>'.__("Diagnosis was not saved",'appointzilla').'</div>';
+        $message = '<div id="message" class="updated below-h2"><p>'.__("Treatment was not saved",'appointzilla').'</div>';
     }
 }
 else if ($_GET[action]=='delete'){
-    $result = $DiagnosisController->deleteDiagnosis($_GET);
+    $result = $TreatmentController->deleteTreatment($_GET);
     if ($result>0){
-        $message = '<div id="message" class="updated below-h2"><p>'.__("Diagnosis was deleted",'appointzilla').'</div>';
+        $message = '<div id="message" class="updated below-h2"><p>'.__("Treatment was deleted",'appointzilla').'</div>';
     }
     else if ($result == -1){
-        $message = '<div id="message" class="updated below-h2"><p>'.__("Diagnosis was not deleted",'appointzilla').'</div>';
+        $message = '<div id="message" class="updated below-h2"><p>'.__("Treatment was not deleted",'appointzilla').'</div>';
     }
 }
 if ($_GET[action]=='new'){?>
-    <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-plus-square"></i> <?php _e('New Diagnosis','appointzilla');?></h3></div>
+    <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-plus-square"></i> <?php _e('New Treatment','appointzilla');?></h3></div>
     <?php
     echo $message;
-    $DiagnosisController->getNewDiagnosisTable();
+    $TreatmentController->getNewTreatmentTable();
 }
 else if ($_GET[action]=='update'){?>
-    <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-plus-square"></i> <?php _e('Update Diagnosis','appointzilla');?></h3></div>
+    <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-plus-square"></i> <?php _e('Update Treatment','appointzilla');?></h3></div>
     <?php
     echo $message;
-    $DiagnosisController->getEditableDiagnosisTable($_GET);
+    $TreatmentController->getEditableTreatmentTable($_GET);
 }
 else if ($_GET[action]=='view'){?>
     <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;">
-        <h3><i class="fa fa-plus-square"></i> <?php _e('View Diagnosis','appointzilla');?></h3></div>
+        <h3><i class="fa fa-plus-square"></i> <?php _e('View Treatment','appointzilla');?></h3></div>
     <?php
-    $DiagnosisController->viewDiagnosisTable($_GET);
+    $TreatmentController->viewTreatmentTable($_GET);
 }else{?>
-<div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-dot-circle-o"></i> <?php _e('Diagnosis','appointzilla');?></h3></div>
-<?php $DiagnosisController->getDiagnosisListTable();?>
+    <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-dot-circle-o"></i> <?php _e('Treatment','appointzilla');?></h3></div>
+    <?php $TreatmentController->getTreatmentListTable();?>
 
 <?php }?>
 <script>
@@ -62,7 +62,7 @@ else if ($_GET[action]=='view'){?>
         jQuery('.filter_row input').keyup(function(){
             filterTable(this);
         });
-        jQuery('#create_diagnosis_button').click(function(){
+        jQuery('#create_treatment_button').click(function(){
             jQuery('form').submit();
         });
     });

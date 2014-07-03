@@ -9,6 +9,7 @@
  */
 require_once('install-script.php');
 require_once('menu-pages/widget/AppointzillaWidgetController.php');
+$pluginDIR='';
 //ini_set('error_reporting', !E_NOTICE & !E_WARNING);
 
 // Run 'Install' script on plugin activation ###
@@ -29,7 +30,6 @@ function initialize_widget()
     register_widget( 'AppointzillaWidgetController' );
 }
 add_action( 'wp_ajax_get_diagnosis_service_ids', 'get_diagnosis_service_ids_callback' );
-
 function get_diagnosis_service_ids_callback() {
     global $wpdb; // this is how you get access to the database
     $diagnosis_service_table    = $wpdb->prefix . "ap_diagnosis_service";
@@ -42,8 +42,8 @@ function get_diagnosis_service_ids_callback() {
 
     die(); // this is required to return a proper result
 }
-add_action( 'wp_ajax_remindment_reminded', 'remindment_reminded_callback' );
 
+add_action( 'wp_ajax_remindment_reminded', 'remindment_reminded_callback' );
 function remindment_reminded_callback() {
     global $wpdb; // this is how you get access to the database
     $appointment_table = $wpdb->prefix . "ap_appointments";
@@ -53,6 +53,38 @@ function remindment_reminded_callback() {
     );
     echo $result;
 
+    die(); // this is required to return a proper result
+}
+add_action( 'wp_ajax_new_medical_cart_row', 'new_medical_cart_row_callback' );
+function new_medical_cart_row_callback() {
+    global $wpdb; // this is how you get access to the database
+    $medical_cart_table = $wpdb->prefix . "ap_medical_cart";
+    $result = $wpdb->insert($medical_cart_table,
+        array(
+			'medical_cart_date'=>$_POST[medical_cart_date],
+			'medical_cart_code'=>$_POST[medical_cart_code],
+			'medical_cart_tooth'=>$_POST[medical_cart_tooth],
+			'medical_cart_note'=>$_POST[medical_cart_note],
+			'medical_cart_image_ids'=>$_POST[medical_cart_image_ids],
+			'medical_cart_appointment_id'=>$_POST[medical_cart_appointment_id],
+		)
+	);
+    echo $result;
+    die(); // this is required to return a proper result
+}
+
+add_action( 'wp_ajax_new_medical_cart_treatment', 'new_medical_cart_treatment_callback' );
+function new_medical_cart_treatment_callback() {
+    global $wpdb; // this is how you get access to the database
+    $medical_cart_treatment_table = $wpdb->prefix . "ap_medical_cart_treatment";
+    $result = $wpdb->insert($medical_cart_treatment_table,
+        array(
+            'treatment_id'=>$_POST[treatment_id],
+            'medical_cart_id'=>$_POST[medical_cart_id],
+            'medical_cart_treatment_date'=>date('d-m-Y'),
+        )
+    );
+    echo $result;
     die(); // this is required to return a proper result
 }
 
@@ -76,7 +108,9 @@ function appointment_calendar_menu() {
     // manage Service Page
     $SubMenu5 = add_submenu_page( '', 'Manage Service', '', 'administrator', 'manage-service', 'display_manage_service_page' );
 
-    $SubMenu31 = add_submenu_page( 'appointment-calendar', __('Diagnosis', 'appointzilla'), __('Diagnosis', 'appointzilla'), 'administrator', 'diagnosis', 'display_diagnosis_page' );
+    $SubMenu31 = add_submenu_page( 'appointment-calendar', __('Treatment', 'appointzilla'), __('Treatment', 'appointzilla'), 'administrator', 'treatment', 'display_treatment_page' );
+
+    $SubMenu32 = add_submenu_page( 'appointment-calendar', __('Diagnosis', 'appointzilla'), __('Diagnosis', 'appointzilla'), 'administrator', 'diagnosis', 'display_diagnosis_page' );
 
     // Staff Page
     $SubMenu6 = add_submenu_page( 'appointment-calendar', 'Staffs', __('Staffs', 'appointzilla'), 'administrator', 'staff', 'display_staff_page' );
@@ -102,8 +136,6 @@ function appointment_calendar_menu() {
     // Update Appointments Page
     $SubMenu14 = add_submenu_page( '', 'Update Appointment', '', 'administrator', 'update-appointment', 'display_update_appointment_page' );
 
-    // Payment Transaction Page
-    //$SubMenu18 = add_submenu_page( 'appointment-calendar', __('Payment Transaction', 'appointzilla'), __('Payment Transaction', 'appointzilla'), 'administrator', 'manage-payment-transaction', 'display_payment_transaction_page' );
 
     //Export Appointments & Client List
     $SubMenu19 = add_submenu_page('appointment-calendar', __('Export Lists', 'appointzilla'), __('Export Lists', 'appointzilla'), 'administrator', 'export-lists', 'display_export_lists_page' );
@@ -168,6 +200,7 @@ function appointment_calendar_menu() {
     add_action( 'admin_print_styles-' . $SubMenu25, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu30, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu31, 'other_pages_css_js' );
+    add_action( 'admin_print_styles-' . $SubMenu32, 'other_pages_css_js' );
 
 }// end of menu function
 
@@ -183,7 +216,6 @@ function calendar_css_js() {
     wp_enqueue_style('fullcalendar-css',plugins_url('/menu-pages/fullcalendar-assets-new/css/fullcalendar.css', __FILE__));
     wp_enqueue_style('datepicker-css',plugins_url('/menu-pages/datepicker-assets/css/jquery-ui-1.8.23.custom.css', __FILE__));
     wp_enqueue_style('apcal-css',plugins_url('/menu-pages/css/apcal-css.css', __FILE__));
-
 }
 
 function other_pages_css_js() {
@@ -194,7 +226,7 @@ function other_pages_css_js() {
     wp_enqueue_style('fancybox-thumbs-css',plugins_url('/bootstrap-assets/css/jquery.fancybox-thumbs.css', __FILE__));
 
 
-    wp_enqueue_script( 'jquery-ui',plugins_url('menu-pages/jquery-ui-custom/js/jquery-ui-1.10.4.custom.js', __FILE__), array('jquery'), true );
+    wp_enqueue_script( 'jquery-ui',plugins_url('menu-pages/jquery-ui-custom/js/jquery-ui-1.10.4.custom.min.js', __FILE__), array('jquery') );
     wp_enqueue_script('datepicker-js',plugins_url('/menu-pages/datepicker-assets/js/jquery.ui.datepicker.js', __FILE__),array('jquery','jquery-custom'));
     wp_enqueue_script('tooltip',plugins_url('/bootstrap-assets/js/bootstrap-tooltip.js', __FILE__),array('jquery'));
     wp_enqueue_script('bootstrap-affix',plugins_url('/bootstrap-assets/js/bootstrap-affix.js', __FILE__));
@@ -273,6 +305,10 @@ add_action( 'wp', 'shortcode_detect' );
  //diagnosis page
  function display_diagnosis_page() {
      require_once("menu-pages/diagnosis.php");
+ }
+ //diagnosis page
+ function display_treatment_page() {
+     require_once("menu-pages/treatment.php");
  }
  //manage service page
  function display_manage_service_page() {
@@ -418,9 +454,22 @@ function load_apcal_reminder() {
 add_action('admin_enqueue_scripts', 'my_admin_scripts');
 
 function my_admin_scripts() {
-    if (isset($_GET['page']) && $_GET['page'] == 'medical_cart') {
+    if (isset($_GET['page']) && ($_GET['page'] == 'medical_cart' || $_GET['page'] == 'update-appointment')) {
         wp_enqueue_media();
-        wp_register_script('my-admin-js', WP_PLUGIN_URL.'/my-plugin/my-admin.js', array('jquery'));
-        wp_enqueue_script('my-admin-js');
+		wp_enqueue_script( 'my-admin-js',WP_PLUGIN_URL.'/my-plugin/my-admin.js', array('jquery') );
     }
+}
+
+add_action( 'admin_init', 'include_classes' );
+
+function include_classes()
+{
+    global $pluginDIR;
+    $pluginDIR = plugin_dir_path( __FILE__ );
+    include_once($pluginDIR.'/menu-pages/includes/AppointmentController.php');
+    include_once($pluginDIR.'/menu-pages/includes/TreatmentController.php');
+    include_once($pluginDIR.'/menu-pages/includes/DiagnosisController.php');
+    include_once($pluginDIR.'/menu-pages/includes/MedicalCartController.php');
+    include_once($pluginDIR.'/menu-pages/includes/PrintView.php');
+    include_once($pluginDIR.'/menu-pages/includes/ReportController.php');
 }

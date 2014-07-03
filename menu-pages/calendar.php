@@ -23,7 +23,7 @@ if($GoogleCalendarTwoWaySync == 'yes') {
 
 // load appointment n event from last past month
 $Current_Month_First_Date = strtotime(date("Y-m-01"));
-$Load_From_Last_Month = date("Y-m-d", strtotime("-1 month", $Current_Month_First_Date));
+$Load_From_Last_Month = date("Y-m-d", strtotime("-6 month", $Current_Month_First_Date));
 //only for recurring app
 $Load_Recurring_From_Last_Month = date("Y-m-d", strtotime("-6 month", $Current_Month_First_Date));
 if(isset($_POST['filterbystaff']) && $_POST[bystaff]>0) {
@@ -38,8 +38,7 @@ if(isset($_POST['filterbystaff']) && $_POST[bycabinet]>0) {
 $FetchAllApps_sql = "select $AppointmentTableName.`id`, $client_table.`name` as name, $staff_table.name as staff_name, `start_time`, `end_time`, `date` FROM `$AppointmentTableName`
     INNER JOIN $staff_table on $staff_table.id = $AppointmentTableName.staff_id
     INNER JOIN $client_table on $client_table.id = $AppointmentTableName.client_id
-WHERE `recurring` = 'no' $query AND `date` >= '$Load_From_Last_Month'";
-
+WHERE (`recurring` = 'no' OR recurring='') $query AND `date` >= '$Load_From_Last_Month'";
 $FetchAllRApps_sql = "select * FROM `$AppointmentTableName` WHERE `recurring` = 'yes' $query AND `recurring_st_date` >= '$Load_Recurring_From_Last_Month'";
 //Normal Event
 $FetchAllEvent_sql = "SELECT `id`, `name`, `start_time`, `end_time`, `start_date`, `end_date`, `repeat` FROM `$EventTableName` WHERE `repeat` = 'N' AND `start_date` >= '$Load_From_Last_Month' ";
@@ -1210,8 +1209,8 @@ if(isset($_POST['Action'])) {
                         <td><input name="ex-client-occupation" type="text" class="ex-client-occupation" style="height:30px;" value="<?php echo $single_client['occupation']; ?>" readonly="" /></td>
                         <td>
                             <div id="ex-user-form-btn-div">
-                                <button type="button" class="apcal_btn apcal_btn-success" id="ex-book-now" name="ex-book-now" onclick="return CheckValidation('ExUser',this);"><i class="icon-ok icon-white"></i> <?php _e('Book Now', 'appointzilla'); ?></button>
-                                <button type="button" class="apcal_btn apcal_btn-danger" id="ex-cancel-app" name="ex-cancel-app" onclick="return TryAgainBooking();"><i class="icon-remove icon-white"></i> <?php _e('Cancel', 'appointzilla'); ?></button>
+                                <button type="button" class="apcal_btn btn apcal_btn-success" id="ex-book-now" name="ex-book-now" onclick="return CheckValidation('ExUser',this);"><i class="icon-ok icon-white"></i> <?php _e('Book Now', 'appointzilla'); ?></button>
+                                <button type="button" class="apcal_btn btn apcal_btn-danger" id="ex-cancel-app" name="ex-cancel-app" onclick="return TryAgainBooking();"><i class="icon-remove icon-white"></i> <?php _e('Cancel', 'appointzilla'); ?></button>
                             </div>
                             <div id="ex-user-form-loading-img" style="display:none;"><?php _e('Scheduling appointment, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
                             <div id="ex-canceling-img" style="display:none;"><?php _e('Refreshing, Please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
@@ -1223,7 +1222,7 @@ if(isset($_POST['Action'])) {
                 <tr>
                     <td colspan="3">
                         <?php  _e("Sorry! No record found.","appointzilla"); ?>
-                        <button type="button" onclick="return TryAgainBooking();" class="apcal_btn apcal_btn-danger"><i class="fa fa-mail-reply"></i> Try Again</button>
+                        <button type="button" onclick="return TryAgainBooking();" class="apcal_btn apcal_btn-danger btn "><i class="fa fa-mail-reply"></i> Try Again</button>
                     </td>
                 </tr>
             <?php
