@@ -248,7 +248,6 @@ FROM $treatment_table as tr
                 'other_tabele_name'=>'medical_cart',
             )
         );
-        echo '<br/>'.$wpdb->last_query;
         if ($queryResult==false){
             $result[message] = __('<span style="color:red">Field was not removed.</span>','appointzilla');
         }

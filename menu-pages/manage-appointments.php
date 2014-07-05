@@ -301,7 +301,6 @@
                     $StaffId = $staffid;
                     $ClientId = $GetClient->id;
                     //include notification class
-                    require_once('notification-class.php');
                     $Notification = new Notification();
                     if($status == 'approved') $On = "approved";
                     if($status == 'cancelled') $On = "cancelled";

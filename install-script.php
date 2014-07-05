@@ -237,7 +237,7 @@ $AppointmentsTable_sql = "CREATE TABLE IF NOT EXISTS `$AppointmentsTableName` (
   `email` varchar(256) NOT NULL,
   `service_id` int(11) NOT NULL,
   `staff_id` int(11) NOT NULL,
-  `diagnosis_id` int(11) NOT NULL,
+  `treatment_id` int(11) NOT NULL,
   `cabinet_id` int(11) NOT NULL,
   `phone` varchar(20) NOT NULL,
   `start_time` varchar(10) NOT NULL,

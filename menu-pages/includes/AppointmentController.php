@@ -16,24 +16,20 @@ class AppointmentController
         global $wpdb;
         $appointment_table  = $wpdb->prefix . "ap_appointments";
         $staff_table_name   = $wpdb->prefix . "ap_staff";
-        $diagnosis_table   = $wpdb->prefix . "ap_diagnosis";
-        $AppointmentDetails = $wpdb->get_row("SELECT * FROM `$appointment_table` WHERE $appointment_table.`id` ='$params[appointmentID]'",ARRAY_A);
+        $clients_table   = $wpdb->prefix . "ap_clients";
+        $treatment_table   = $wpdb->prefix . "ap_treatment";
+        $AppointmentDetails = $wpdb->get_row("SELECT *,$clients_table.name as clientName, $clients_table.phone as clientPhone, $clients_table.email as clientEmail FROM `$appointment_table` INNER JOIN $clients_table on $clients_table.id = $appointment_table.client_id WHERE $appointment_table.`id` ='$params[appointmentID]'",ARRAY_A);
         ?>
         <table width="100%" class="table table-hover" >
             <tr>
-                <th scope="row"><?php _e('Appointment Creation Date', 'appointzilla'); ?> </th>
-                <td><strong>:</strong></td>
-                <td><?php echo date($this->dateFormat." ".$this->timeFormat.":s", strtotime("$AppointmentDetails[book_date]")); ?></td>
+                <th scope="row" style="width:15%;"><?php _e('Appointment Creation Date', 'appointzilla'); ?> </th>
+                <td ><strong>:</strong></td>
+                <td style="width:80%;"><?php echo date($this->dateFormat." ".$this->timeFormat.":s", strtotime("$AppointmentDetails[book_date]")); ?></td>
             </tr>
             <tr>
-                <th width="16%" scope="row"><?php _e('Name', 'appointzilla', 'appointzilla'); ?></th>
-                <td width="5%"><strong>:</strong></td>
-                <td width="79%"><input name="appname" type="text" id="appname" value="<?php echo $AppointmentDetails[name]; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Name.', 'appointzilla'); ?>" ><i class="icon-question-sign"></i></a></td>
-            </tr>
-            <tr>
-                <th scope="row"><strong><?php _e('Email', 'appointzilla'); ?></strong></th>
+                <th scope="row"><?php _e('Client Info', 'appointzilla', 'appointzilla'); ?></th>
                 <td><strong>:</strong></td>
-                <td><input name="appemail" type="text" id="appemail" value="<?php echo $AppointmentDetails[email]; ?>" class="inputheight"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Email.', 'appointzilla'); ?>" ><i  class="icon-question-sign"></i></a></td>
+                <td><?php _e('Name', 'appointzilla', 'appointzilla'); ?>:<?php echo $AppointmentDetails[clientName]; ?> <?php _e('Phone', 'appointzilla'); ?>:<?php echo $AppointmentDetails[clientPhone]; ?></td>
             </tr>
             <tr>
                 <th scope="row"><strong><?php _e('Staff', 'appointzilla'); ?></strong></th>
@@ -52,25 +48,20 @@ class AppointmentController
                 </td>
             </tr>
             <tr>
-                <th scope="row"><strong><?php _e('Diagnosis', 'appointzilla'); ?></strong></th>
+                <th scope="row"><strong><?php _e('Treatment', 'appointzilla'); ?></strong></th>
                 <td><strong>:</strong></td>
                 <td>
-                    <select id="diagnosisID" name="diagnosisID">
-                        <option value="" <?php echo ($AppointmentDetails[diagnosis_id] == '' || $AppointmentDetails[diagnosis_id] == '0' ) ? "selected":'';?>></option>
+                    <select id="treatmentID" name="treatmentID">
+                        <option value="" <?php echo ($AppointmentDetails[treatment_id] == '' || $AppointmentDetails[treatment_id] == '0' ) ? "selected":'';?>></option>
                         <?php //get all service list
                         global $wpdb;
-                        $diagnosisList = $wpdb->get_results("select * from $diagnosis_table",ARRAY_A);
-                        foreach($diagnosisList as $diagnosis) { ?>
-                            <option value="<?php echo $diagnosis[diagnosis_id]; ?>"
-                                <?php echo ($AppointmentDetails[diagnosis_id] == $diagnosis[diagnosis_id] ) ? "selected":'';  ?> ><?php echo $diagnosis[diagnosis_name]; ?></option>
+                        $treatmentList = $wpdb->get_results("select * from $treatment_table",ARRAY_A);
+                        foreach($treatmentList as $treatment) { ?>
+                            <option value="<?php echo $treatment[treatment_id]; ?>"
+                                <?php echo ($AppointmentDetails[treatment_id] == $treatment[treatment_id] ) ? "selected":'';  ?> ><?php echo $treatment[treatment_name]; ?></option>
                         <?php } ?>
-                    </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Diagnosis.', 'appointzilla'); ?>" ><i class="icon-question-sign"></i></a>
+                    </select>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Treatment.', 'appointzilla'); ?>" ><i class="icon-question-sign"></i></a>
                 </td>
-            </tr>
-            <tr>
-                <th scope="row"><strong><?php _e('Phone', 'appointzilla'); ?></strong></th>
-                <td><strong>:</strong></td>
-                <td><input name="appphone" type="text" id="appphone" value="<?php echo $AppointmentDetails[phone]; ?>" class="inputheight" maxlength="12">&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Phone Number.', 'appointzilla'); ?>" ><i  class="icon-question-sign"></i></a></td>
             </tr>
             <tr>
                 <th scope="row"><strong><?php _e('Start Time', 'appointzilla'); ?></strong></th>
@@ -244,27 +235,49 @@ class AppointmentController
     public function getMedicalCartTab($params)
     {
         global $wpdb;
-        $medical_cart_table         = $wpdb->prefix . "ap_medical_cart";
+        $medical_cart_treatment_table   = $wpdb->prefix . "ap_medical_cart_treatment";
+        $medical_cart_table             = $wpdb->prefix . "ap_medical_cart";
+        $diagnosis_table                = $wpdb->prefix . "ap_diagnosis";
+        $treatment_table                = $wpdb->prefix . "ap_treatment";
         $medicalCartRows = $wpdb->get_results("SELECT * FROM $medical_cart_table
-        WHERE `medical_cart_appointment_id` = $params[appointmentID]",ARRAY_A);
+            LEFT JOIN $diagnosis_table on $diagnosis_table.diagnosis_id  = $medical_cart_table.medical_cart_diagnosis_id
+            WHERE `medical_cart_client_id` = $params[client_id]
+            Order by medical_cart_id DESC",ARRAY_A);
     if (count($medicalCartRows)>0){?>
     <table width="100%" class="table table-hover">
         <thead>
         <tr>
-            <th width="6%"><?php _e('Date','appointzilla'); ?> </th>
-            <th width="6%"><?php _e('Code','appointzilla'); ?></th>
-            <th width="6%"><?php _e('Tooth','appointzilla'); ?></th>
-            <th width="26%"><?php _e('Note','appointzilla'); ?></th>
-            <th width="50%"><?php _e('Images','appointzilla'); ?></th>
+            <th width="5%"><?php _e('Date','appointzilla'); ?> </th>
+            <th width="5%"><?php _e('Tooth','appointzilla'); ?></th>
+            <th width="15%"><?php _e('Note','appointzilla'); ?></th>
+            <th width="35%"><?php _e('Diagnosis','appointzilla'); ?></th>
+            <th width="35%"><?php _e('Images','appointzilla'); ?></th>
+            <th width="5%"><?php _e('Action','appointzilla'); ?></th>
         </tr>
         </thead>
         <?php foreach($medicalCartRows as $key=>$singleRow):
             $imageList = explode(',',$singleRow['medical_cart_image_ids']);?>
             <tr>
                 <td><?php echo $singleRow['medical_cart_date']; ?></td>
-                <td><?php echo $singleRow['medical_cart_code']; ?></td>
                 <td><?php echo $singleRow['medical_cart_tooth']; ?></td>
                 <td><?php echo $singleRow['medical_cart_note']; ?></td>
+                <td><?php echo $singleRow['diagnosis_name']; ?>
+                    <?php
+                    $treatmentList = $wpdb->get_results("SELECT medical_cart_treatment_date, $medical_cart_treatment_table.treatment_id,$treatment_table.treatment_name FROM $medical_cart_treatment_table
+                        INNER JOIN $medical_cart_table on $medical_cart_table.medical_cart_id  = $medical_cart_treatment_table.medical_cart_id
+                        INNER JOIN $treatment_table on $medical_cart_treatment_table.treatment_id = $treatment_table.treatment_id
+                        WHERE $medical_cart_treatment_table.`medical_cart_id` = $singleRow[medical_cart_id]",ARRAY_A);
+                    ?>
+                    <?php if (count($treatmentList)>0):?>
+                    <h6><?php _e('Treatment','appointzilla'); ?></h6>
+                    <ul>
+                        <?php foreach($treatmentList as $singleTreatment):?>
+                            <li><?php echo $singleTreatment[medical_cart_treatment_date]. ' '. $singleTreatment[treatment_name];?> </li>
+                        <?php endforeach;?>
+                    </ul>
+                <?php else:?>
+                <?php endif;?>
+                </td>
                 <td><div="imglist">
                     <?php foreach($imageList as $singleImage):
                         $imgStuff = wp_get_attachment_image_src( $singleImage, 'full' );
@@ -272,6 +285,8 @@ class AppointmentController
                             <a rel="fancybox-<?php echo $key;?>" class="fancybox-thumbs" href="<?php echo $imgStuff['0'];?>"><?php echo wp_get_attachment_image( $singleImage, array(64,64), 1 );?></a>
                         <?php endif;?>
                     <?php endforeach;?>
+                </td>
+                <td></td>
             </tr>
         <?php endforeach;?>
     </table>
@@ -381,5 +396,75 @@ class AppointmentController
             return true;
         return false;
 
+    }
+
+    public function updateAppointment($params)
+    {
+
+        $discountList = array();
+        foreach($_POST[selected] as $key=>$singleSelected){
+            $discountList[$key] = $_POST[discount][$key];
+        }
+        $_POST[discount] = $discountList;
+        global $wpdb;
+        $up_app_id = $_POST['updateppointments'];
+        $treatmentID = $_POST['treatmentID'];
+        $staffid = $_POST['staffid'];
+        $start_time = date("h:i A", strtotime($_POST['start_time']));
+        $end_time = date("h:i A", strtotime($_POST['end_time']));
+        $appointmentdate = date("Y-m-d", strtotime($_POST['start_date']));
+        $note = strip_tags($_POST['app_desc']);
+        $payment_status = strip_tags($_POST['payment_status']);
+        $status =  $_POST['app_status'];
+        $recurring = $_POST['recurring'];
+        $recurring_type = $_POST['recurring_type'];
+        $recurring_st_date = date("Y-m-d", strtotime($_POST['recurring_st_date'])); //$_POST['recurring_st_date'];
+        $recurring_ed_date = date("Y-m-d", strtotime($_POST['recurring_ed_date'])); //$_POST['recurring_ed_date'];
+        $appointment_by = $_POST['app_appointment_by'];
+        $AppointmentTable = $wpdb->prefix . "ap_appointments";
+        $appointment_service_table = $wpdb->prefix . "ap_appointment_service";
+        $result = $wpdb->query("UPDATE `$AppointmentTable` SET `staff_id` = '$staffid', treatment_id = $treatmentID,  `start_time` = '$start_time', `end_time` = '$end_time', `date` = '$appointmentdate', `note` = '$note', `status` = '$status', `recurring` = '$recurring', `recurring_type` = '$recurring_type', `recurring_st_date` = '$recurring_st_date', `recurring_ed_date` = '$recurring_ed_date', `payment_status` = '$payment_status' WHERE `id` = '$up_app_id'");
+        if($result!==false) {
+            //saving services
+            $wpdb->delete( $appointment_service_table, array( 'appointment_id' => $up_app_id ) );
+            foreach($_POST[selected] as $key=>$value){
+                $wpdb->insert( $appointment_service_table,
+                    array(
+                        'appointment_id' => $up_app_id,
+                        'service_id'=>$key,
+                        'discount'=>$_POST[discount][$key],
+                        'update_date'=>date('Y-m-d')
+                    ));
+            }
+            //send notification to client if appointment approved or cancelled
+            if($status == 'approved' || $status == 'cancelled' ) {
+                $BlogName =  get_bloginfo();
+                $ClientTable = $wpdb->prefix . "ap_clients";
+                $GetClient = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `email` = '$email' ", OBJECT);
+                // don't notify no@email.com coz its without attendee
+                if($up_app_id && $GetClient->id && $email != "no@email.com") {
+                    $AppId = $up_app_id;
+                    $StaffId = $staffid;
+                    $ClientId = $GetClient->id;
+                    //include notification class
+                    $Notification = new Notification();
+                    if($status == 'approved') $On = "approved";
+                    if($status == 'cancelled') $On = "cancelled";
+                    $Notification->notifyclient($On, $AppId, $treatmentID, $StaffId, $ClientId, $BlogName);
+                    if(get_option('staff_notification_status') == 'on') {
+                        $Notification->notifystaff($On, $AppId, $treatmentID, $StaffId, $ClientId, $BlogName);
+                    }
+                }
+            }// end send notification to client if appointment approved or cancelled ckech
+
+
+            //redirect to updated appointment details page
+            $message = __('Appointment successfully updated', 'appointzilla');
+            return $message;
+        }
+        else {
+            $message = __('Appointment was not updated', 'appointzilla');
+            return $message;
+        }
     }
 }

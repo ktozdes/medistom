@@ -11,10 +11,11 @@ Hhello world from Medical Cart
         }
     </style>
     <div class="bs-docs-example tooltip-demo">
-
+    <?php if (strlen($result[message])>10):?>
     <div id="message" class="updated below-h2"><p>
         <?php echo $result[message];?>
     </p></div>
+    <?php endif;?>
     <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;">
         <h3><i class="fa fa-group"></i> <?php _e('Medical Cart Item','appointzilla'); ?></h3>
     </div>
@@ -311,21 +312,26 @@ Hhello world from Medical Cart
                         <th width="10%"><strong><?php _e('Name','appointzilla'); ?></strong></th>
                         <th width="10%"><strong><?php _e('Date','appointzilla'); ?></strong></th>
                     </tr>
-                <?php foreach($result[treatment_list] as $singleTreatment):?>
+                <?php
+                if (count($result[treatment_list])>0):
+                foreach($result[treatment_list] as $singleTreatment):?>
                     <tr>
                         <td><?php echo $singleTreatment[treatment_name];?></td>
                         <td><?php echo $singleTreatment[medical_cart_treatment_date];?></td>
                     </tr>
                 <?php endforeach;?>
+                <?php endif;
+                if (is_numeric($result[medical_cart]['medical_cart_id'])):?>
                     <tr>
                         <td><?php _e('New Treatment','appointzilla'); ?></td>
                         <td><select id="new_treatment_id">
-                            <?php foreach($result[all_treatment_list] as $singleTreatment):?>
-                            <option value="<?php echo $singleTreatment[treatment_id]?>"><?php echo $singleTreatment[treatment_name];?></option>
-                            <?php endforeach;?>
-                        </select>
-                        <a style="margin-bottom:10px;" id="new_treatment_button" class="btn" onclick="addNewTreatment(<?php echo $result[medical_cart]['medical_cart_id'];?>)" href="javascript:void(0)"><i class="icon-ok"></i><?php _e('Add','appointzilla'); ?></a></td>
+                                <?php foreach($result[all_treatment_list] as $singleTreatment):?>
+                                    <option value="<?php echo $singleTreatment[treatment_id]?>"><?php echo $singleTreatment[treatment_name];?></option>
+                                <?php endforeach;?>
+                            </select>
+                            <a style="margin-bottom:10px;" id="new_treatment_button" class="btn" onclick="addNewTreatment(<?php echo $result[medical_cart]['medical_cart_id'];?>)" href="javascript:void(0)"><i class="icon-ok"></i><?php _e('Add','appointzilla'); ?></a></td>
                     </tr>
+                <?php endif;?>
                 </table>
             </div>
             <?php if ($_GET[action]=='new' && !isset($_POST[new_row_button])):?>
@@ -339,9 +345,11 @@ Hhello world from Medical Cart
     </form>
 
 <?php elseif($section=='client_list'):?>
-    <div id="message" class="updated below-h2"><p>
-    <?php echo $result[message];?>
-    </p></div>
+    <?php if (strlen($result[message])>10):?>
+        <div id="message" class="updated below-h2"><p>
+                <?php echo $result[message];?>
+            </p></div>
+    <?php endif;?>
     <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;">
         <h3><i class="fa fa-group"></i> <?php _e('Select Client','appointzilla'); ?></h3>
     </div>
@@ -370,9 +378,11 @@ Hhello world from Medical Cart
         </tbody>
     </table>
 <?php elseif($section=='single_medical_cart_page'):?>
-    <div id="message" class="updated below-h2"><p>
-        <?php echo $result[message];?>
-    </p></div>
+    <?php if (strlen($result[message])>10):?>
+        <div id="message" class="updated below-h2"><p>
+                <?php echo $result[message];?>
+            </p></div>
+    <?php endif;?>
     <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;">
         <h3><i class="fa fa-group"></i> <?php _e('Medical Cart Client List','appointzilla'); ?></h3>
     </div>

@@ -7,9 +7,10 @@
  * Author URI: http://www.appointzilla.com
  * Plugin URI: http://www.appointzilla.com
  */
-require_once('install-script.php');
 require_once('menu-pages/widget/AppointzillaWidgetController.php');
 $pluginDIR='';
+$DateFormat = (get_option('apcal_date_format') == '') ? "d-m-Y" : get_option('apcal_date_format');
+$TimeFormat = (get_option('apcal_time_format') == '')?"h:i" : get_option('apcal_time_format');
 //ini_set('error_reporting', !E_NOTICE & !E_WARNING);
 
 // Run 'Install' script on plugin activation ###
@@ -32,10 +33,10 @@ function initialize_widget()
 add_action( 'wp_ajax_get_diagnosis_service_ids', 'get_diagnosis_service_ids_callback' );
 function get_diagnosis_service_ids_callback() {
     global $wpdb; // this is how you get access to the database
-    $diagnosis_service_table    = $wpdb->prefix . "ap_diagnosis_service";
-    $diagnosisServiceList = $wpdb->get_results("SELECT service_id FROM $diagnosis_service_table WHERE diagnosis_id=$_GET[diagnosis_id]",ARRAY_A);
+    $treatment_service_table    = $wpdb->prefix . "ap_treatment_service";
+    $treatmentServiceList = $wpdb->get_results("SELECT service_id FROM $treatment_service_table WHERE treatment_id=$_GET[diagnosis_id]",ARRAY_A);
     $selectedServices = array();
-    foreach($diagnosisServiceList as $key=>$singleService){
+    foreach($treatmentServiceList as $singleService){
         $selectedServices[] = $singleService[service_id];
     }
     echo json_encode($selectedServices);

@@ -1359,7 +1359,7 @@ WHERE app.id =$newAppointmentID ",ARRAY_A);?>
                 $StaffId = $StaffId;
                 $ClientId = $clientId;
                 //include notification class
-                require_once('menu-pages/notification-class.php');
+                require_once('menu-pages/includes/notification-class.php');
                 $Notification = new Notification();
                 $Notification->notifyadmin($Status, $AppId, $ServiceId, $StaffId, $ClientId, $BlogName, $DateFormat, $TimeFormat);
                 $Notification->notifyclient($Status, $AppId, $ServiceId, $StaffId, $ClientId, $BlogName, $DateFormat, $TimeFormat);
