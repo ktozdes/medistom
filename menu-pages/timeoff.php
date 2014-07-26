@@ -55,32 +55,32 @@
                                 <em>
                                     <?php
                                     if($Event->repeat == 'N' && !$Event->allday) {
-                                        echo "None";
+                                        _e("None",'appointzilla');
                                     }
 
                                     if($Event->repeat == 'PD') {
-                                        echo "Particular Date(s)";
+                                        _e('Particular Date(s)','appointzilla');
                                     }
 
                                     if($Event->repeat == 'D') {
-                                        echo "Daily";
+                                        _e('Daily','appointzilla');
                                     }
 
                                     if($Event->repeat == 'W') {
-                                        echo "Weekly";
+                                        _e('Weekly','appointzilla');
                                     }
 
                                     if($Event->repeat == 'BW') {
-                                        echo "Bi-Weekly";
+                                        _e('Bi-Weekly','appointzilla');
                                     }
 
                                     if($Event->repeat == 'M') {
                                         $diff = ( strtotime($Event->end_date) - strtotime($Event->start_date)  ) /60/60/24/31;
-                                        echo "Monthly";
+                                        _e('Monthly','appointzilla');
                                     }
 
                                     if($Event->allday) {
-                                        echo " All Day TimeOff";
+                                        _e('All Day Time Off','appointzilla');
                                     } ?>
                                 </em>
                             </td>
@@ -88,27 +88,27 @@
                                 <em>
                                     <?php if($Event->repeat != 'N') {
                                             if(strtotime("$Event->end_date") < strtotime(date('Y-m-d'))) {
-                                                echo "Gone";
+                                                _e('Gone','appointzilla');
                                             }
 
                                             if( strtotime("$Event->start_date") <= strtotime(date('Y-m-d')) && strtotime("$Event->end_date") >= strtotime(date('Y-m-d'))) {
-                                                echo "Running";
+                                                _e('Running','appointzilla');
                                             }
 
                                             if(strtotime("$Event->start_date") > strtotime(date('Y-m-d'))) {
-                                                echo "Up-Comming";
+                                                _e('Up-Comming','appointzilla');
                                             }
                                         } else if($Event->repeat == 'N') {
                                             if(strtotime("$Event->end_date") < strtotime(date('Y-m-d'))) {
-                                                echo "Gone";
+                                                _e('Gone','appointzilla');
                                             }
 
                                             if( strtotime("$Event->start_date") <= strtotime(date('Y-m-d')) && strtotime("$Event->end_date") >= strtotime(date('Y-m-d'))) {
-                                                echo "Running";
+                                                _e('Running','appointzilla');
                                             }
 
                                             if(strtotime("$Event->start_date") > strtotime(date('Y-m-d'))) {
-                                                echo "Up-Comming";
+                                                _e('Up-Comming','appointzilla');
                                             }
                                         }
                                     ?>

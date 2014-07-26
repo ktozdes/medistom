@@ -21,7 +21,7 @@ function appointment_calendar_shortcode() {
 
     require_once( plugin_dir_path( __FILE__ ) . 'calendar/tc_calendar.php');
     // include appointzilla class file
-    require_once('appointzilla-class.php');
+    require_once('menu-pages/includes/appointzilla-class.php');
     require_once(plugin_dir_path( __FILE__ ) . 'menu-pages/includes/AppointmentController.php');
 
     $AppointZilla = new Appointzilla();
@@ -104,7 +104,9 @@ function appointment_calendar_shortcode() {
         if($TodayHours->id == 6 & $TodayHours->close == 'yes') { $SatColor = $CloseDayColor; } else { $SatColor = "";}
         if($TodayHours->id == 7 & $TodayHours->close == 'yes') { $SunColor = $CloseDayColor; } else { $SunColor = "";}
     } ?>
-
+    <div id="ajax-loading-container">
+        <img src="<?php echo plugins_url('/appointment-calendar-premium/menu-pages/images/big-loading.gif');?>"/>
+    </div>
     <style>
      .fc-mon {
         background-color: <?php echo $MonColor; ?>;
@@ -153,6 +155,7 @@ function appointment_calendar_shortcode() {
     </style>
 
     <script type='text/javascript'>
+    var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
     jQuery(document).ready(function() {
         jQuery('#calendar').fullCalendar({
             header: {
@@ -523,6 +526,7 @@ function appointment_calendar_shortcode() {
             jQuery('#AppSecondModal').hide();
         });
         jQuery('#bycabinet').change(function(){
+            jQuery('#ajax-loading-container').show();
             jQuery('#filter_form').submit();
         });
 
@@ -578,12 +582,18 @@ function appointment_calendar_shortcode() {
        jQuery('.error').hide();
        var AppDate = jQuery('#AppDate').val();
        var StaffId = jQuery('#StaffId').val();
-       var Start_Time = jQuery('input[name=start_time]:radio:checked').val();
-       if(!Start_Time) {
+       var Start_Time = jQuery('select[name=start_time]').val();
+       var End_Time = jQuery('select[name=end_time]').val();
+
+       if(!Start_Time || !End_Time) {
            jQuery("#time_slot_box").after("<span style='width:auto; margin-left:5%;' class='error'><strong><?php _e('Select any time.', 'appointzilla'); ?></strong></span>");
            return false;
        }
-       var ThirdData = "AppDate=" + AppDate + "&StaffId=" + StaffId + "&CabinetID=" + jQuery('#CabinetID').val() + "&StartTime=" + Start_Time ;
+       if (Start_Time>=End_Time){
+           jQuery("#time_slot_box").after("<span style='width:auto; margin-left:5%;' class='error'><strong><?php _e('Start Time cannot be bigger than End Time.', 'appointzilla'); ?></strong></span>");
+           return false;
+       }
+       var ThirdData = "AppDate=" + AppDate + "&StaffId=" + StaffId + "&CabinetID=" + jQuery('#CabinetID').val() + "&StartTime=" + Start_Time + "&EndTime=" + End_Time ;
        jQuery('#buttondiv').hide();
        jQuery('#loading').show();
        jQuery.ajax({
@@ -620,7 +630,7 @@ function appointment_calendar_shortcode() {
     }
 
    //load forth final modal for confirm appointment
-   function CheckValidation(UserType,e) {
+   function CheckValidation(UserType,e,skipValidation) {
 
        jQuery('.error').hide();
        var AppDate = jQuery('#AppDate').val();
@@ -652,68 +662,87 @@ function appointment_calendar_shortcode() {
                jQuery(".client-last-name").after("<span class='error'>&nbsp;<br><strong><?php _e('Last name required.', 'appointzilla'); ?></strong></span>");
                return false;
            }
-
            //client phone
            if (ClientPhone == "") {
                jQuery(".client-phone").after("<span class='error'>&nbsp;<br><strong><?php _e("Phone required", "appointzilla"); ?></strong></span>");
                return false;
            }
+           var data = {
+               'action':'is_client_exists',
+               'ClientFirstName': ClientFirstName,
+               'ClientLastName': ClientLastName,
+               'ClientPhone': ClientPhone
+           };
+           // since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
 
-           var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime="+EndTime;
-           var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientLastName=" + ClientLastName + "&ClientPhone=" + ClientPhone + "&ClientEmail=" + ClientEmail + "&ClientNote=" + ClientSi + "&ClientOccupation=" + ClientOccupation + "&ClientAddress =" + ClientAddress;
-           var PostData = PostData1 +  PostData3;
-
-           jQuery('#new-user-form-rebtn-div').hide();
            jQuery('#new-user-form-loading-img').show();
-       }
+           jQuery.post(ajaxurl, data, function(response) {
+               if (response==1){
+                   jQuery('#new-user-form-loading-img').hide();
+                   alert('<?php _e('Such Client Already Exists', 'appointzilla'); ?>');
+                   return false;
+               }
+               else{
+                   var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime="+EndTime;
+                   var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientLastName=" + ClientLastName + "&ClientPhone=" + ClientPhone + "&ClientEmail=" + ClientEmail + "&ClientNote=" + ClientSi + "&ClientOccupation=" + ClientOccupation + "&ClientAddress =" + ClientAddress;
+                   var PostData = PostData1 +  PostData3;
+
+                   jQuery('#new-user-form-rebtn-div').hide();
+                   jQuery('#new-user-form-loading-img').show();
+                   jQuery.ajax({
+                       dataType : 'html',
+                       type: 'POST',
+                       url : location.href,
+                       cache: false,
+                       data : PostData,
+                       complete : function() {  },
+                       success: function(data) {
+                           data = jQuery(data).find('div#AppForthModalData');
+                           jQuery("#new-user-form-loading-img").hide();
+                           jQuery("#check-email-div-form").hide();
+                           jQuery("#AppThirdModal").hide();
+                           jQuery("#AppForthModalFinal").show();
+                           jQuery("#AppForthModalFinal").html(data);
+                       }
+                   });
+               }
+           });
+           }
 
        /**
         * existing user booking case
         */
 		if(UserType == "ExUser") {
-			var ClientEmail = jQuery(e).parents('tr').find(".ex-client-email").val();
-			var ClientFirstName = jQuery(e).parents('tr').find(".ex-client-name").val();
-			var ClientPhone = jQuery(e).parents('tr').find(".ex-client-phone").val();
-			var ClientSi = jQuery(e).parents('tr').find(".ex-client-si").val();
 			var ClientID = jQuery(e).parents('tr').find(".client-id").val();
 
 			//client first name
-			if (ClientFirstName == "") {
-               jQuery("#ex-client-first-name").after("<span class='error'>&nbsp;<br><strong><?php _e('First name required.', 'appointzilla'); ?></strong></span>");
-               return false;
-           }
-
-           //client phone
-           if (ClientPhone == "") {
-               jQuery("#ex-client-phone").after("<span class='error'>&nbsp;<br><strong><?php _e("Phone required. <br>Only Numbers 1234567890.", "appointzilla"); ?></strong></span>");
-               return false;
-           }
 
            var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime=" + EndTime;
-           var PostData2 = "&UserType=" + UserType + "&ClientEmail=" + ClientEmail;
-           var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientPhone=" + ClientPhone+'&clientID='+ClientID;
-           var PostData = PostData1 + PostData2 + PostData3;
+           var PostData2 = "&UserType=ExUser" + '&clientID='+ClientID;
+           var PostData = PostData1 + PostData2;
 
            jQuery('#ex-user-form-btn-div').hide();
            jQuery('#ex-user-form-loading-img').show();
+
+            jQuery.ajax({
+                dataType : 'html',
+                type: 'POST',
+                url : location.href,
+                cache: false,
+                data : PostData,
+                complete : function() {  },
+                success: function(data) {
+                    data = jQuery(data).find('div#AppForthModalData');
+                    jQuery("#new-user-form-loading-img").hide();
+                    jQuery("#check-email-div-form").hide();
+                    jQuery("#AppThirdModal").hide();
+                    jQuery("#AppForthModalFinal").show();
+                    jQuery("#AppForthModalFinal").html(data);
+                }
+            });
        }
 
-       jQuery.ajax({
-           dataType : 'html',
-           type: 'POST',
-           url : location.href,
-           cache: false,
-           data : PostData,
-           complete : function() {  },
-           success: function(data) {
-               data = jQuery(data).find('div#AppForthModalData');
-               jQuery("#new-user-form-loading-img").hide();
-               jQuery("#check-email-div-form").hide();
-               jQuery("#AppThirdModal").hide();
-               jQuery("#AppForthModalFinal").show();
-               jQuery("#AppForthModalFinal").html(data);
-           }
-       });
+
    }
 
    //check existing user
@@ -749,6 +778,8 @@ function appointment_calendar_shortcode() {
    }
 
    function CloseModelform() {
+
+       jQuery('#ajax-loading-container').show();
        jQuery("#AppForthModalFinal").hide();
        jQuery("#AppSecondModalData").hide();
        jQuery("#AppThirdModalData").hide();
@@ -1052,7 +1083,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
 
     else if( isset($_GET['AppDate']) && isset($_GET['StaffId']) && !isset($_GET['StartTime'])) {?>
         <!---loading second modal form ajax return code--->
-        <?php require_once('shortcode-time-slot-calculation.php');
+        <?php require_once('menu-pages/includes/shortcode-time-slot-calculation.php');
     }
 
     else if( isset($_GET['StartTime']) && isset($_GET['StaffId']) ) {
@@ -1063,7 +1094,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                 <input name="CabinetID" id="CabinetID" type="hidden" value="<?php if(isset($_GET['CabinetID'])) { echo $_GET['CabinetID']; } ?>" />
                 <input name="AppDate" id="AppDate" type="hidden" value="<?php if(isset($_GET['AppDate'])) { echo $_GET['AppDate']; } ?>" />
                 <input name="StartTime" id="StartTime" type="hidden" value="<?php if(isset($_GET['StartTime'])) { echo $_GET['StartTime']; } ?>" />
-                <input name="EndTime" id="EndTime" type="hidden" value="<?php if(isset($_GET['StartTime'])) { echo date($TimeFormat, strtotime($_GET['StartTime'] . "+1 hour")); } ?>" />
+                <input name="EndTime" id="EndTime" type="hidden" value="<?php if(isset($_GET['EndTime'])) { echo date($TimeFormat, strtotime($_GET['EndTime'])); } ?>" />
                 <div class="apcal_modal-info">
                     <a href="javascript:void(0)" onclick="CloseModelform()" style="float:right; margin-right:40px; margin-top:21px;" id="close" ><i class="icon-remove"></i></a>
                     <div class="apcal_alert apcal_alert-info">
@@ -1071,7 +1102,9 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                         <?php _e('Step 3. Complete Your Booking', 'appointzilla'); ?>
                     </div>
                 </div>
-
+                <div class="apcal_alert apcal_alert-info" style="margin:10px">
+                    <?php echo __('Start Time','appointzilla').':'.date($TimeFormat, strtotime($_GET['StartTime'])) ?>
+                    <?php echo __('End Time','appointzilla').':'.date($TimeFormat, strtotime($_GET['EndTime'])) ?></div>
                 <div class="apcal_modal-body">
                     <?php if($AllCalendarSettings['apcal_user_registration'] == "yes") { ?>
                     <!--check user div-->
@@ -1130,7 +1163,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                                 <td>&nbsp;</td>
                                 <td>
                                     <div id="new-user-form-btn-div">
-                                        <button type="button" class="apcal_btn apcal_btn-success" id="book-now" name="book-now" onclick="return CheckValidation('NewUser',this)"><i class="icon-ok icon-white"></i>  <?php _e('Book Now', 'appointzilla'); ?></button>
+                                        <button type="button" class="apcal_btn apcal_btn-success" id="book-now" name="book-now" onclick="return CheckValidation('NewUser',this, false)"><i class="icon-ok icon-white"></i>  <?php _e('Book Now', 'appointzilla'); ?></button>
                                     </div>
                                     <div id="new-user-form-loading-img" style="display:none;"><?php _e('Scheduling appointment, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
                                 </td>
@@ -1148,18 +1181,32 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                                     <th scope="row"><?php _e('Email or Name', 'appointzilla'); ?></th>
                                     <td><strong>:</strong></td>
                                     <td><input name="check-client-email" type="text" id="check-client-email" style="height:30px;" /></td>
-                                </tr>
-                                <tr>
-                                    <td>&nbsp;</td>
-                                    <td>&nbsp;</td>
                                     <td>
                                         <div id="existing-user-form-btn">
                                             <button type="button" class="apcal_btn apcal_btn-success" id="check-existing-user" name="check-existing-user" onclick="return CheckExistingUser();"><i class="icon-search icon-white"></i> <?php _e('Search', 'appointzilla'); ?></button>
                                         </div>
-                                        <div id="existing-user-loading-img" style="display:none;"><?php _e('Searching, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"><?php _e('Select Client', 'appointzilla'); ?></th>
+                                    <td><strong>:</strong></td>
+                                    <td>
+                                        <select class="client-id">
+                                            <?php
+                                            $client_table = $wpdb->prefix . "ap_clients";
+                                            $client_list = $wpdb->get_results("SELECT * FROM `$client_table` ORDER BY name ASC",ARRAY_A);
+                                            foreach($client_list as $singleClient):?>
+                                            <option value="<?php echo $singleClient[id]?>"><?php echo $singleClient[name].' ( '.__('Phone','appointzilla').' : '. $singleClient[phone].' ) ';?></option>
+                                             <?php endforeach;?>
+                                        </select>
+                                    <td>
+                                        <div id="existing-user-form-btn">
+                                            <button type="button" class="apcal_btn apcal_btn-success" id="ex-book-now" name="ex-book-now" onclick="return CheckValidation('ExUser',this,true);"><i class="icon-ok icon-white"></i> <?php _e('Book Now', 'appointzilla'); ?></button>
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
+                            <div id="existing-user-loading-img" style="display:none;"><?php _e('Searching, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
                         </div>
 
                         <!--div for display existing user search details-->
@@ -1202,7 +1249,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
                                 <td>
                                     <div id="new-user-form-btn-div">
                                         <button type="button" class="apcal_btn" id="back2" name="back2" onclick="LoadSecondModal2()"><i class="icon-arrow-left"></i>  <?php _e('Back', 'appointzilla'); ?></button>
-                                        <button type="button" class="apcal_btn apcal_btn-success" id="book-now" name="book-now" onclick="return CheckValidation('NewUser',this)"><i class="icon-ok icon-white"></i>  <?php _e('Book Now', 'appointzilla'); ?></button>
+                                        <button type="button" class="apcal_btn apcal_btn-success" id="book-now" name="book-now" onclick="return CheckValidation('NewUser',this,false)"><i class="icon-ok icon-white"></i>  <?php _e('Book Now', 'appointzilla'); ?></button>
                                     </div>
                                     <div id="new-user-form-loading-img" style="display:none;"><?php _e('Scheduling appointment, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
                                 </td>
@@ -1294,6 +1341,8 @@ WHERE app.id =$newAppointmentID ",ARRAY_A);?>
 						<td width="73%"><?php echo _e(ucfirst($singleAppointment[status]),'appointzilla'); ?></td>
 					</tr>
 				</table>
+
+                <button type='button' onclick='CloseModelform()' value='Done' class='apcal_btn'><i class="icon-ok"></i> <?php _e('Done', 'appointzilla'); ?></button>
 			</div>
                 <?php
 			else:?>
@@ -1551,7 +1600,7 @@ WHERE app.id =$newAppointmentID ",ARRAY_A);?>
 					<td><input name="ex-client-occupation" type="text" class="ex-client-occupation" style="height:30px;" value="<?php echo $single_client['occupation']; ?>" readonly="" /></td>
 					<td>
 						<div id="ex-user-form-btn-div">
-							<button type="button" class="apcal_btn apcal_btn-success" id="ex-book-now" name="ex-book-now" onclick="return CheckValidation('ExUser',this);"><i class="icon-ok icon-white"></i> <?php _e('Book Now', 'appointzilla'); ?></button>
+							<button type="button" class="apcal_btn apcal_btn-success" id="ex-book-now" name="ex-book-now" onclick="return CheckValidation('ExUser',this,false);"><i class="icon-ok icon-white"></i> <?php _e('Book Now', 'appointzilla'); ?></button>
 							<button type="button" class="apcal_btn apcal_btn-danger" id="ex-cancel-app" name="ex-cancel-app" onclick="return TryAgainBooking();"><i class="icon-remove icon-white"></i> <?php _e('Cancel', 'appointzilla'); ?></button>
 						</div>
 						<div id="ex-user-form-loading-img" style="display:none;"><?php _e('Scheduling appointment, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>

@@ -51,13 +51,13 @@ Hhello world from Medical Cart
                     <br/><label for="upload_image">
                         <input id="cart_images" type="hidden" name="cart_images" value="<?php
                         echo (is_array($result[medical_cart][medical_cart_tooth]))?implode(',',$result[medical_cart][medical_cart_image_ids]):'';?>"/>
-                        <input id="upload_image_button" class="button" type="button" value="Upload Image" />
+                        <a id="upload_image_button" onclick="MediaUploadFrame(this,'<?php echo (is_array($result[medical_cart][medical_cart_tooth]))?implode(',',$result[medical_cart][medical_cart_image_ids]):''?>')" href="javascript:void(0)" class="button">Upload Image</a>
                         <br />Enter a URL or upload an image
                     </label></td>
             </tr>
             </tbody>
             </table>
-            <h4><?php _e('Questionary','appointzilla'); ?></h4>
+                <h4><?php _e('Questionary','appointzilla'); ?></h4>
             <table width="100%" class="detail-view table table-striped table-condensed">
             <?php
             $currentGroup = '';
@@ -306,7 +306,7 @@ Hhello world from Medical Cart
                 </div>
             </div>
             <div class="analysis_container">
-                <h4><?php _e('Analysis','appointzilla'); ?></h4>
+                <h4><?php _e('Treatment','appointzilla'); ?></h4>
                 <table width="100%" class="detail-view table table-striped table-condensed">
                     <tr>
                         <th width="10%"><strong><?php _e('Name','appointzilla'); ?></strong></th>
@@ -336,15 +336,16 @@ Hhello world from Medical Cart
             </div>
             <?php if ($_GET[action]=='new' && !isset($_POST[new_row_button])):?>
             <div style="clear:both;">
-                <button style="margin-bottom:10px;" id="new_row_button" type="submit" class="btn btn-primary" name="new_row_button"><i class="icon-ok"></i><?php _e('Create','appointzilla'); ?></button>
+                <button style="margin-bottom:10px;" id="new_row_button" type="submit" class="btn btn-primary" name="new_row_button"><i class="icon-ok  icon-white"></i><?php _e('Create','appointzilla'); ?></button>
             <?php elseif ($_GET[action]=='update'):?>
-                <button style="margin-bottom:10px;" id="edit_row_button" type="submit" class="btn btn-primary" name="edit_row_button"><i class="icon-ok"></i><?php _e('Update','appointzilla'); ?></button>
+                <button style="margin-bottom:10px;" id="edit_row_button" type="submit" class="btn btn-primary" name="edit_row_button"><i class="icon-ok icon-white"></i><?php _e('Update','appointzilla'); ?></button>
             <?php endif;?>
-            <a style="margin-bottom:10px;" id="cancel_row" type="button" class="btn btn-primary" name="cancel_row" href="?page=medical_cart&action=view&client_id=<?php echo $result[medical_cart][medical_cart_client_id];?>"><i class="icon-remove"></i><?php _e('Cancel','appointzilla'); ?> </a>
+            <a style="margin-bottom:10px;" id="cancel_row" type="button" class="btn btn-primary" name="cancel_row" href="?page=medical_cart&action=view&client_id=<?php echo $result[medical_cart][medical_cart_client_id];?>"><i class="icon-remove  icon-white"></i><?php _e('Cancel','appointzilla'); ?> </a>
             </div>
     </form>
 
-<?php elseif($section=='client_list'):?>
+<?php
+elseif($section=='client_list'):?>
     <?php if (strlen($result[message])>10):?>
         <div id="message" class="updated below-h2"><p>
                 <?php echo $result[message];?>
@@ -418,13 +419,14 @@ Hhello world from Medical Cart
         endif;
     endforeach;?></div></td>
             <td><a data-original-title="Update" rel="tooltip" href="?page=medical_cart&medical_cart_id=<?php echo $singleRow['medical_cart_id']; ?>&action=update"><i class="icon-pencil"></i></a>
-                <a data-original-title="Delete" rel="tooltip" href="?page=medical_cart&medical_cart_id=<?php echo $singleRow['medical_cart_id']; ?>&client_id=<?php echo $singleRow['medical_cart_client_id']; ?>&action=delete" onclick="return confirm('Do you want to delete this Question?')"><i class="icon-remove"></i></td>
+                <a data-original-title="Delete" rel="tooltip" href="?page=medical_cart&medical_cart_id=<?php echo $singleRow['medical_cart_id']; ?>&client_id=<?php echo $singleRow['medical_cart_client_id']; ?>&action=delete" onclick="return confirm('<?php _e('Do you want to delete this Question?','appointzilla');?>')"><i class="icon-remove"></i></td>
         </tr>
         <?php endforeach;?>
     </tbody>
     </table>
     <div id="gruopbuttonbox">
         <a data-original-title="" class="btn btn-primary" href="?page=medical_cart&client_id=<?php echo $_GET['client_id']; ?>&action=new"><i class="icon-plus icon-white"></i><?php _e('Add New','appointzilla'); ?></a>
+        <a data-original-title="" class="btn btn-primary" href="?page=medical_cart&client_id=<?php echo $_GET['client_id']; ?>&action=print" target="_blank"><i class="icon-print icon-white"></i><?php _e('Print','appointzilla'); ?></a>
     </div>
 <?php else:?>
     bye world from medical cart;

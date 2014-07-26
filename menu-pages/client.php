@@ -78,7 +78,7 @@
                 <td><em><?php
 
                 ?>
-                <a data-placement="right" href="?page=medical_cart&client_id=<?php echo $client->id; ?>" title="<?php _e('View','appointzilla'); ?>" rel="tooltip"  class="btn btn-success"><i class="icon-book icon-white"></i> <?php _e('View','appointzilla'); ?> </a></em></td>
+                <a data-placement="right" href="?page=medical_cart&action=view&client_id=<?php echo $client->id; ?>" title="<?php _e('View','appointzilla'); ?>" rel="tooltip"  class="btn btn-success"><i class="icon-book icon-white"></i> <?php _e('View','appointzilla'); ?> </a></em></td>
                 <td><?php $findapp = $client->email;
                     $appointment_table_name= $wpdb->prefix . "ap_appointments";
                     $toat_app_query = "SELECT * FROM `$appointment_table_name` WHERE `email` = '$findapp';";

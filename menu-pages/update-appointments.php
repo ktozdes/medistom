@@ -3,10 +3,14 @@ global $wpdb;
 $TimeFormat = (get_option('apcal_time_format') == '')?"h:i" : get_option('apcal_time_format');
 $cal_admin_currency_id = get_option('cal_admin_currency');
 $service_table              = $wpdb->prefix . "ap_services";
+$client_table               = $wpdb->prefix . "ap_clients";
 $ServiceCategoryTable       = $wpdb->prefix . "ap_service_category";
 $appointment_table          = $wpdb->prefix . "ap_appointments";
 $appointment_service_table  = $wpdb->prefix . "ap_appointment_service";
 $medical_cart_table         = $wpdb->prefix . "ap_medical_cart";
+$medical_cart_treat_table   = $wpdb->prefix . "ap_medical_cart_treatment";
+$diagnosis_table            = $wpdb->prefix . "ap_diagnosis";
+$treatment_table            = $wpdb->prefix . "ap_treatment";
 $payment_table              = $wpdb->prefix . "ap_payment_transaction";
 $appointmentID = isset($_GET[appointmentID])?$_GET[appointmentID]:'';
 $appointmentID = isset($_GET[updateid])?$_GET[updateid]:$appointmentID;
@@ -33,34 +37,33 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
     $appointmentID = $_GET[appointmentID];
     $newPayment = isset($_GET[payment])?$_GET[payment]:0;
     $total = $AppointmentController->getTotalPrice($appointmentID);
+    $appointmentDetails = $wpdb->get_row("SELECT * FROM $appointment_table where id = $appointmentID",ARRAY_A);
     $PaymentList = $wpdb->get_row("SELECT SUM(ammount) FROM $payment_table
     WHERE `app_id` = $appointmentID",ARRAY_A);
-    if (($total[discount_price]-$total[paid]-$newPayment)>=0){
-        $total[paid] = $total[paid]+$newPayment;
-        if ($newPayment>0){
-            $wpdb->insert($payment_table,
-                array(
-                    'ammount'=>$newPayment,
-                    'app_id'=>$appointmentID,
-                    'date'=>date('Y-m-d'),
-                    'status'=>'paid',
-                    'gateway'=>'cash',
-                )
-            );
-        }
-        if (($total[discount_price]-$total[paid])<0.01){
-            $wpdb->update($appointment_table,
-                array(
-                    'payment_status'=>'paid'),
-                array(
-                    'id'=>$appointmentID,
-                )
-            );
-        }
+    $total[paid] = $total[paid]+$newPayment;
+    if ($newPayment>0){
+        $wpdb->insert($payment_table,
+            array(
+                'ammount'=>$newPayment,
+                'client_id'=>$appointmentDetails[client_id],
+                'app_id'=>$appointmentID,
+                'date'=>date('Y-m-d'),
+                'status'=>'paid',
+                'gateway'=>'cash',
+            )
+        );
+        $wpdb->query("UPDATE $client_table set balance = balance + $newPayment WHERE id = $appointmentDetails[client_id]");
+
     }
-    else{?>
-    <div style="color:Red;"><?php _e('Payment Cannot Exceed Price', 'appointzilla'); ?></div>
-<?php }
+    if (($total[discount_price]-$total[paid]+$total[total_left])<0.01){
+        $wpdb->update($appointment_table,
+            array(
+                'payment_status'=>'paid'),
+            array(
+                'id'=>$appointmentID,
+            )
+        );
+    }
     $AppointmentController->getPaymentTab(array(appointmentID=>$appointmentID));
     exit();
 }?>
@@ -495,6 +498,11 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
                 <td><em><?php echo $AppDetails->email; ?></em></td>
             </tr>
             <tr>
+                <th scope="row"><?php _e('Phone', 'appointzilla'); ?></th>
+                <td><strong>:</strong></td>
+                <td><em><?php echo $AppDetails->phone; ?></em></td>
+            </tr>
+            <tr>
                 <th scope="row"><?php _e('Staff', 'appointzilla'); ?></th>
                 <td><strong>:</strong></td>
                 <td>
@@ -508,9 +516,17 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
                 </td>
             </tr>
             <tr>
-                <th scope="row"><?php _e('Phone', 'appointzilla'); ?></th>
+                <th scope="row"><?php _e('Cabinet', 'appointzilla'); ?></th>
                 <td><strong>:</strong></td>
-                <td><em><?php echo $AppDetails->phone; ?></em></td>
+                <td>
+                    <em>
+                    <?php
+                        $cabinet_name = $wpdb->prefix . "ap_cabinets";
+                        $staffdetails= $wpdb->get_row("SELECT * FROM $cabinet_name WHERE `cabinet_id` ='$AppDetails->cabinet_id'");
+                        echo ucwords($staffdetails->cabinet_name);
+                    ?>
+                    </em>
+                </td>
             </tr>
             <tr>
                 <?php if($TimeFormat == 'h:i') $ATimeFormat = "h:i A"; else $ATimeFormat = "H:i"; ?>
@@ -547,26 +563,6 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
                 <th scope="row"><?php _e('Status', 'appointzilla'); ?></th>
                 <td><strong>:</strong></td>
                 <td><em><?php echo _e(ucfirst($AppDetails->status), 'appointzilla'); ?></em></td>
-            </tr>
-            <tr>
-                <th scope="row"><?php _e('Repeat', 'appointzilla'); ?></th>
-                <td><strong>:</strong></td>
-                <td><em><?php echo _e(ucfirst($AppDetails->recurring), 'appointzilla'); ?></em></td>
-            </tr>
-            <tr>
-                <th scope="row"><?php _e('Repeat Type', 'appointzilla'); ?></th>
-                <td><strong>:</strong></td>
-                <td><em><?php echo _e(ucfirst($AppDetails->recurring_type), 'appointzilla'); ?></em></td>
-            </tr>
-            <tr>
-                <th scope="row"><?php _e('Repeat Start Date', 'appointzilla'); ?></th>
-                <td><strong>:</strong></td>
-                <td><em><?php echo date($DateFormat, strtotime($AppDetails->recurring_st_date)); ?></em></td>
-            </tr>
-            <tr>
-                <th scope="row"><?php _e('Repeat End Date', 'appointzilla'); ?></th>
-                <td><strong>:</strong></td>
-                <td><em><?php echo date($DateFormat, strtotime($AppDetails->recurring_ed_date)); ?></em></td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Payment Status', 'appointzilla'); ?></th>
@@ -612,7 +608,7 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
                     <td><strong><?php _e('Full Price', 'appointzilla'); ?>:</strong><?php echo $total[full_price]; ?></td>
                     <td><strong><?php _e('Discount Price', 'appointzilla'); ?>:</strong><?php echo $total[discount_price];?></td>
                     <td><strong><?php _e('Paid', 'appointzilla'); ?>:</strong><?php echo $total[paid]; ?></td>
-                    <td><strong><?php _e('Left', 'appointzilla'); ?>:</strong><?php echo ($total[discount_price] - $total[paid]); ?></td>
+                    <td><strong><?php _e('Left', 'appointzilla'); ?>:</strong><?php echo ($total[discount_price] - $total[paid])*(-1); ?></td>
                 </tr>
             </table>
     <?php }
@@ -654,7 +650,7 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
                         <td><strong><?php _e('Full Price', 'appointzilla'); ?>:</strong><?php echo $total[full_price]; ?></td>
                         <td><strong><?php _e('Discount Price', 'appointzilla'); ?>:</strong><?php echo $total[discount_price]; ?></td>
                         <td><strong><?php _e('Paid', 'appointzilla'); ?>:</strong><?php echo $total[paid]; ?></td>
-                        <td><strong><?php _e('Left', 'appointzilla'); ?>:</strong><?php echo ($total[discount_price] - $total[paid]); ?></td>
+                        <td><strong><?php _e('Left', 'appointzilla'); ?>:</strong><?php echo ($total[discount_price] - $total[paid])*(-1); ?></td>
                     </tr>
                 </table>
             <?php }
@@ -665,33 +661,47 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
         <div id="tab_cat_id-3">
             <?php
             $medicalCartRows = $wpdb->get_results("SELECT * FROM $medical_cart_table
-        WHERE `medical_cart_appointment_id` = $AppId",ARRAY_A);
+              INNER JOIN $diagnosis_table on $diagnosis_table.diagnosis_id = $medical_cart_table.medical_cart_diagnosis_id
+        WHERE `medical_cart_client_id` = $AppDetails->client_id",ARRAY_A);
             if (count($medicalCartRows)>0){?>
             <table width="100%" class="detail-view table table-striped table-condensed medical_cart_list">
                 <thead>
                 <tr>
-                    <th width="6%"><?php _e('Date','appointzilla'); ?> </th>
-                    <th width="6%"><?php _e('Code','appointzilla'); ?></th>
                     <th width="6%"><?php _e('Tooth','appointzilla'); ?></th>
-                    <th width="26%"><?php _e('Note','appointzilla'); ?></th>
+                    <th width="6%"><?php _e('Date','appointzilla'); ?> </th>
+                    <th width="16%"><?php _e('Diagnosis','appointzilla'); ?></th>
+                    <th width="16%"><?php _e('Note','appointzilla'); ?></th>
                     <th width="50%"><?php _e('Images','appointzilla'); ?></th>
                 </tr>
                 </thead>
                 <?php foreach($medicalCartRows as $key=>$singleRow):
                 $imageList = explode(',',$singleRow['medical_cart_image_ids']);?>
                 <tr>
-                    <td><?php echo $singleRow['medical_cart_date']; ?></td>
-                    <td><?php echo $singleRow['medical_cart_code']; ?></td>
                     <td><?php echo $singleRow['medical_cart_tooth']; ?></td>
+                    <td><?php echo $singleRow['medical_cart_date']; ?></td>
+                    <td><?php echo $singleRow['diagnosis_name']; ?></td>
                     <td><?php echo $singleRow['medical_cart_note']; ?></td>
                     <td><div="imglist">
                         <?php foreach($imageList as $singleImage):
                         $imgStuff = wp_get_attachment_image_src( $singleImage, 'full' );
                         if ($imgStuff!=''):?>
                         <a rel="fancybox-<?php echo $key;?>" class="fancybox-thumbs" href="<?php echo $imgStuff['0'];?>"><?php echo wp_get_attachment_image( $singleImage, array(64,64), 1 );?></a>
-                    <?php endif;?>
-                    <?php endforeach;?>
+                        <?php endif;?>
+                        <?php endforeach;?>
                 </tr>
+                <?php
+                $treatmentList = $wpdb->get_results("SELECT * FROM $medical_cart_treat_table
+                    INNER JOIN $treatment_table on $medical_cart_treat_table.treatment_id = $treatment_table.treatment_id
+                    WHERE `medical_cart_id` = $singleRow[medical_cart_id]",ARRAY_A);
+                    if (is_array($treatmentList) && count($treatmentList)>0){
+                    foreach($treatmentList as $singleTreatment){?>
+                <tr>
+                    <td ></td>
+                    <td colspan="2"><?php echo $singleTreatment[medical_cart_treatment_date];?></td>
+                    <td colspan="2"><?php echo $singleTreatment[treatment_name];?></td>
+                </tr>
+                    <?php }
+                    }?>
                 <?php endforeach;?>
             </table>
             <?php }
@@ -704,8 +714,11 @@ if ($_GET[action]=='new_payment' || $_GET[action]=='delete_payment' ){?>
                 <tr>
                     <th scope="row">&nbsp;</th>
                     <td>&nbsp;</td>
-                    <td><a href="?page=appointment-calendar" class="btn"><i class="icon-arrow-left"></i> <?php _e('Back', 'appointzilla'); ?></a>
-                        <a href="?page=update-appointment&updateid=<?php echo $AppId; ?>&from=calendar" class="btn btn-primary"><?php _e('Edit', 'appointzilla'); ?></a></td>
+                    <td><a href="?page=manage-appointments" class="btn"><i class="icon-arrow-left"></i> <?php _e('Back', 'appointzilla'); ?></a>
+                        <?php if ($AppDetails->payment_status!='paid'):?>
+                        <a href="?page=update-appointment&updateid=<?php echo $AppId; ?>&from=calendar" class="btn btn-primary"><?php _e('Edit', 'appointzilla'); ?></a>
+                        <?php endif;?>
+                    </td>
                 </tr>
             </table>
         </div>

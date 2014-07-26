@@ -3,11 +3,117 @@
 <div class="bs-docs-example tooltip-demo">
     <?php global $wpdb;
     $ServiceTable = $wpdb->prefix . "ap_services";
+    $cabinetTable = $wpdb->prefix . "ap_cabinets";
+    $cabinet_staff_Table = $wpdb->prefix . "ap_cabinets_staff";
     $StaffTable = $wpdb->prefix . "ap_staff";
+    $updatestaff = $_GET[staffupdateid];
+
+    // Add new staff
+    if(isset($_POST['staffcreate'])) {
+        global $wpdb;
+        $staff_name = strip_tags($_POST['staff_name']);
+        $staff_email = $_POST['staff_email'];
+        $staff_phone = $_POST['staff_phone'];
+        $staff_experience = $_POST['staff_experience'];
+        $staff_group = $_POST['staff_group'];
+        $staff_address = strip_tags($_POST['staff_address']);
+        $staff_city = strip_tags($_POST['staff_city']);
+
+        $Exitsstaffdetails = $wpdb->get_row("SELECT * FROM `$StaffTable` WHERE `email` = '$staff_email' ");
+        if($Exitsstaffdetails) {
+            $message = __('<span style="color:orange">Such email is already exists.</span>','appointzilla');
+        } else {
+            $insert_staff = "INSERT INTO `$StaffTable` (`id` ,`name` , `email`, `phone` ,`experience`, `group_id`, `address`, `city`)	VALUES ('NULL', '$staff_name', '$staff_email', '$staff_phone', '$staff_experience', '$staff_group', '$staff_address', '$staff_city');";
+            if($wpdb->query($insert_staff)) {
+
+                $LastInsertedStaffId = mysql_insert_id();
+                // now assign this staff id in selected service
+                $SeletedSerivcesIds = $_POST['service'];
+                foreach($SeletedSerivcesIds as $SingleServiceID) {
+                    $ServiceData = $wpdb->get_row("SELECT * FROM `$ServiceTable` WHERE `id` = '$SingleServiceID' ");
+                    $ServiceStaffIds = unserialize($ServiceData->staff_id);
+                    if(is_array($ServiceStaffIds)) {
+                        array_push($ServiceStaffIds, $LastInsertedStaffId);
+                        $ServiceData = serialize($ServiceStaffIds);
+                    } else {
+                        $ServiceData = serialize($ServiceStaffIds);
+                    }
+                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$ServiceData' WHERE `id` = '$SingleServiceID'");
+                }
+                foreach($_POST[cabinet] as $cabinetID){
+                    $wpdb->insert($cabinet_staff_Table,
+                        array(
+                            staff_id=>$LastInsertedStaffId,
+                            cabinet_id=>$cabinetID)
+                    );
+                }
+                $message = __('<span style="color:green">New staff was added successfully.</span>','appointzilla');
+                echo 'aaaaa';
+                $updatestaff = $LastInsertedStaffId;
+
+            }
+        }
+    }
+
+    // Update staff
+    if(isset($_POST['staffupdate'])) {
+        global $wpdb;
+        $staff_name = strip_tags($_POST['staff_name']);
+        $staff_email = $_POST['staff_email'];
+        $staff_phone = $_POST['staff_phone'];
+        $staff_experience = $_POST['staff_experience'];
+        $staff_group = $_POST['staff_group'];
+        $staff_address = strip_tags($_POST['staff_address']);
+        $staff_city = strip_tags($_POST['staff_city']);
+        $staffupdateid = $_POST['staffupdate'];
+        $updatestaff = $staffupdateid;
+        $update_staff = "UPDATE `$StaffTable` SET `name` = '$staff_name',
+            `email` = '$staff_email',
+            `phone` = '$staff_phone',
+            `experience` = '$staff_experience',
+            `group_id` = '$staff_group',
+            `address` = '$staff_address',
+            `city` = '$staff_city' WHERE `id` ='$staffupdateid';";
+        if ($queryResult==false){
+
+        }
+        if($wpdb->query($update_staff)) {
+            $message = __('<span style="color:green">Staff details successfully updated</span>','appointzilla');
+        } else {
+            $message = __('<span style="color:red">Staff details was not updated</span>','appointzilla');
+        }
+        //search n delete this staff id from all service
+        foreach($_POST[service] as $serviceID){
+            $tempService = $wpdb->get_row("SELECT `id`, `name`, `staff_id` FROM `$ServiceTable` WHERE id = $serviceID",ARRAY_A);
+            if($tempService) {
+                $StaffIDArray = unserialize($tempService[staff_id]);
+                if(is_array($StaffIDArray) && array_search($staffupdateid, $StaffIDArray)===false) {
+                    $StaffIDArray[] = $staffupdateid;
+                    $staffIDstring = serialize($StaffIDArray);
+                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$staffIDstring' WHERE `id` = ".$tempService[id]);
+                }
+                else if (!is_array($StaffIDArray)){
+                    $staffIDstring = serialize(array($staffupdateid));
+                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$staffIDstring' WHERE `id` = ".$tempService[id]);
+                }
+            }
+        }
+        $wpdb->delete($cabinet_staff_Table,
+            array(staff_id=>$staffupdateid)
+        );
+        foreach($_POST[cabinet] as $cabinetID){
+            $wpdb->insert($cabinet_staff_Table,
+                array(
+                    staff_id=>$staffupdateid,
+                    cabinet_id=>$cabinetID)
+                );
+        }
+    }
+
     // add new staff and update staffs
     $AllServiceIds = array();
-    if(isset($_GET['staffupdateid'])) {
-        $updatestaff = $_GET['staffupdateid'];
+    echo $updatestaff;
+    if(($updatestaff>0 && is_numeric($updatestaff) && !isset($_GET['viewid'])) || $_GET[staffupdateid]=='new') {
         $updatestaffdetail= $wpdb->get_row("SELECT * FROM `$StaffTable` WHERE `id` = '$updatestaff'");
         $AllServices = $wpdb->get_results("SELECT `id`, `staff_id` FROM `$ServiceTable`");
         if($AllServices) {
@@ -20,8 +126,13 @@
                 }
             }
         } ?>
+        <?php if (strlen($message)>10):?>
+            <div id="message" class="updated below-h2"><p>
+                    <?php echo $message;?>
+                </p></div>
+        <?php endif;?>
         <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-male"></i> <i class="fa fa-female"></i> <?php _e('Manage Staff','appointzilla'); ?></h3></div>
-        <form action="" method="post" name="Staff-manage">
+        <form action="<?php echo "?page=manage-staff&staffupdateid=$updatestaff"?>" method="post" name="Staff-manage">
             <table width="100%" class="detail-view table table-striped table-condensed">
                 <tr>
                     <th width="15%"><?php _e('Name','appointzilla'); ?></th>
@@ -49,7 +160,7 @@
                         &nbsp;<a href="#" rel="tooltip" title="<?php _e('Phone Number.','appointzilla'); ?>" ><i  class="icon-question-sign"></i></a>
                     </td>
                 </tr>
-                    <tr><th><?php _e('Experience','appointzilla'); ?></th>
+                <tr><th><?php _e('Experience','appointzilla'); ?></th>
                     <td><strong>:</strong></td>
                     <td>
                         <input name="staff_experience" type="text" id="staff_experience"  value="<?php if($updatestaffdetail) echo $updatestaffdetail->experience; ?>" maxlength="2" />
@@ -92,6 +203,26 @@
                 </tr>
 
                 <tr>
+                    <th scope="row"><?php _e('Assign Cabinet(s)','appointzilla'); ?></th>
+                    <td><strong>:</strong></td>
+                    <td>
+                        <label><?php _e('Use CTRL to Select Multiple Cabinets(s)','appointzilla'); ?></label>
+                        <select id="cabinet" name="cabinet[]" multiple="multiple" size="7" style="width:300px;">
+                            <!--<option value="0">Use CTRL to Select Multiple Service(s)</option>-->
+                            <?php
+                            $filterQuery = ($updatestaff=='new')?"GROUP BY $cabinetTable.cabinet_id":"AND staff_id = $updatestaff";
+                            $cabinetList = $wpdb->get_results("SELECT $cabinetTable.cabinet_id,$cabinetTable.cabinet_name, $cabinet_staff_Table.staff_id FROM $cabinetTable
+                                    LEFT JOIN $cabinet_staff_Table on $cabinet_staff_Table.cabinet_id = $cabinetTable.cabinet_id $filterQuery", ARRAY_A);
+                            foreach($cabinetList as $cabinet) {
+                                $selected = ( isset($cabinet[staff_id])) ? 'selected="selected"':"";
+                                echo "<option value='$cabinet[cabinet_id]' $selected >$cabinet[cabinet_name]</option>";
+                            }?>
+                        </select>
+                        &nbsp;<a href="#" rel="tooltip" title="<?php _e('Assign Staff(s) To This Service.&lt;br&gt;Use CTRL To Select Multiple Staffs','appointzilla'); ?>" ><i class="icon-question-sign"></i></a>
+                    </td>
+                </tr>
+
+                <tr>
                   <th scope="row"><?php _e('Assign Service(s)','appointzilla'); ?></th>
                   <td><strong>:</strong></td>
                   <td>
@@ -111,21 +242,19 @@
                     <td></td>
                     <td></td>
                     <td>
-                        <?php if($_GET['staffupdateid']=='new') { ?>
-                            <button name="staffcreate" class="btn" type="submit" id="staffcreate"><i class="icon-ok"></i> <?php _e('Create','appointzilla'); ?></button>
-                        <?php } else { ?>
+                        <?php if($updatestaff>0) { ?>
                             <button name="staffupdate" class="btn" type="submit" value="<?php if($updatestaffdetail) echo $updatestaffdetail->id; ?>" id="staffupdate"><i class="icon-pencil"></i> <?php _e('Update','appointzilla'); ?></button>
+                        <?php } else { ?>
+                            <button name="staffcreate" class="btn" type="submit" id="staffcreate"><i class="icon-ok"></i> <?php _e('Create','appointzilla'); ?></button>
                         <?php } ?>
                         <a href="?page=staff" class="btn"><i class="icon-remove"></i> <?php _e('Cancel','appointzilla'); ?></a>
                     </td>
                 </tr>
           </table>
         </form>
-    <?php } ?>
-
-
-    <?php // view of staff details
-    if(isset($_GET['viewid'])) {
+    <?php }
+    // view of staff details
+    else if(isset($_GET['viewid'])) {
         $clientid=$_GET['viewid'];
         $staffdetails= $wpdb->get_row("SELECT * FROM `$StaffTable` WHERE `id` ='$clientid'"); ?>
          <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-male"></i> <i class="fa fa-female"></i> <?php _e('View Staff','appointzilla'); ?> - <?php echo ucfirst($staffdetails->name); ?></h3> </div>
@@ -174,87 +303,7 @@
             </tr>
          </table><?php
     }
-
-    // Add new staff
-    if(isset($_POST['staffcreate'])) {
-        global $wpdb;
-        $staff_name = strip_tags($_POST['staff_name']);
-        $staff_email = $_POST['staff_email'];
-        $staff_phone = $_POST['staff_phone'];
-        $staff_experience = $_POST['staff_experience'];
-        $staff_group = $_POST['staff_group'];
-        $staff_address = strip_tags($_POST['staff_address']);
-        $staff_city = strip_tags($_POST['staff_city']);
-
-        $Exitsstaffdetails = $wpdb->get_row("SELECT * FROM `$StaffTable` WHERE `email` = '$staff_email' ");
-        if($Exitsstaffdetails) {
-            echo "<script>alert('$staff_email ".__('is already in the database.','appointzilla')."');</script>";
-        } else {
-            $insert_staff = "INSERT INTO `$StaffTable` (`id` ,`name` , `email`, `phone` ,`experience`, `group_id`, `address`, `city`)	VALUES ('NULL', '$staff_name', '$staff_email', '$staff_phone', '$staff_experience', '$staff_group', '$staff_address', '$staff_city');";
-            if($wpdb->query($insert_staff)) {
-
-                $LastInsertedStaffId = mysql_insert_id();
-                // now assign this staff id in selected service
-                $SeletedSerivcesIds = $_POST['service'];
-                foreach($SeletedSerivcesIds as $SingleServiceID) {
-                    $ServiceData = $wpdb->get_row("SELECT * FROM `$ServiceTable` WHERE `id` = '$SingleServiceID' ");
-                    $ServiceStaffIds = unserialize($ServiceData->staff_id);
-                    if(is_array($ServiceStaffIds)) {
-                        array_push($ServiceStaffIds, $LastInsertedStaffId);
-                        $ServiceData = serialize($ServiceStaffIds);
-                    } else {
-                        $ServiceData = serialize($ServiceStaffIds);
-                    }
-                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$ServiceData' WHERE `id` = '$SingleServiceID'");
-                }
-                echo "<script>alert('".__('New Staff','appointzilla')." $staff_name:($staff_email) ".__('is successfully added.','appointzilla')."');</script>";
-                echo "<script>location.href='?page=staff';</script>";
-            }
-        }
-    }
-
-    // Update staff
-    if(isset($_POST['staffupdate'])) {
-        global $wpdb;
-        $staff_name = strip_tags($_POST['staff_name']);
-        $staff_email = $_POST['staff_email'];
-        $staff_phone = $_POST['staff_phone'];
-        $staff_experience = $_POST['staff_experience'];
-        $staff_group = $_POST['staff_group'];
-        $staff_address = strip_tags($_POST['staff_address']);
-        $staff_city = strip_tags($_POST['staff_city']);
-        $staffupdateid = $_POST['staffupdate'];
-
-        $update_staff = "UPDATE `$StaffTable` SET `name` = '$staff_name',
-            `email` = '$staff_email',
-            `phone` = '$staff_phone',
-            `experience` = '$staff_experience',
-            `group_id` = '$staff_group',
-            `address` = '$staff_address',
-            `city` = '$staff_city' WHERE `id` ='$staffupdateid';";
-        if($wpdb->query($update_staff)) {
-            echo "<script>alert('".__('Staff details successfully updated.','appointzilla')."');</script>";
-        } else {
-            echo "<script>alert('".__('Staff details was not updated.','appointzilla')."');</script>";
-        }
-        //search n delete this staff id from all service
-        foreach($_POST[service] as $serviceID){
-            $tempService = $wpdb->get_row("SELECT `id`, `name`, `staff_id` FROM `$ServiceTable` WHERE id = $serviceID",ARRAY_A);
-            if($tempService) {
-                $StaffIDArray = unserialize($tempService[staff_id]);
-                if(is_array($StaffIDArray) && array_search($staffupdateid, $StaffIDArray)===false) {
-                    $StaffIDArray[] = $staffupdateid;
-                    $staffIDstring = serialize($StaffIDArray);
-                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$staffIDstring' WHERE `id` = ".$tempService[id]);
-                }
-                else if (!is_array($StaffIDArray)){
-                    $staffIDstring = serialize(array($staffupdateid));
-                    $wpdb->query("UPDATE `$ServiceTable` SET `staff_id` = '$staffIDstring' WHERE `id` = ".$tempService[id]);
-                }
-            }
-        }
-        echo "<script>location.href='?page=manage-staff&viewid=$staffupdateid';</script>";
-    } ?>
+?>
 
     <style type="text/css"> .error{  color:#FF0000; } </style>
     <script type="text/javascript">

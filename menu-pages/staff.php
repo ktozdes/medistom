@@ -2,6 +2,11 @@
     <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"><h3><i class="fa fa-male"></i> <i class="fa fa-female"></i> <?php _e('Staff','appointzilla');?></h3></div>
     <?php global $wpdb;
     //get all group list
+    global $wpdb;
+    $roles = get_option($wpdb->prefix . 'user_roles');
+
+    print_r($roles);
+
     $StaffGroupsTable = $wpdb->prefix . "ap_staff_groups";
     $StaffGoups = $wpdb->get_results("SELECT * FROM `$StaffGroupsTable`");
     foreach($StaffGoups as $GroupName) { ?>
@@ -132,9 +137,14 @@
         $deletesid = $_GET['sid'];
         $StaffTable = $wpdb->prefix . "ap_staff";
         $ServiceTable = $wpdb->prefix . "ap_services";
+        $staffCabinet = $wpdb->prefix . "ap_cabinets_staff";
         // StaffDetail use when update each service staff_id
         $StaffDetail = $wpdb->get_row("SELECT `name` FROM `$StaffTable` WHERE `id` = '$deletesid'");
         $delete_app_query = "DELETE FROM `$StaffTable` WHERE `id` = '$deletesid';";
+        $wpdb->delete($staffCabinet,
+        array(
+            staff_id=>$deletesid
+        ));
         if($wpdb->query($delete_app_query)) {
             // fetch all service staff_ids
             $AllService = $wpdb->get_results("SELECT * FROM `$ServiceTable`", OBJECT);

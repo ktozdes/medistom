@@ -14,18 +14,9 @@
             <tr>
                 <td colspan="8" scope="col">
                     <div style="float:left;">
-                        <select name="filtername">
-                            <option value="All" <?php if(isset($_POST['filtername']) == 'All') echo "selected"; ?> <?php if(isset($_GET['filtername']) == 'All') echo "selected"; ?> ><?php _e('All Appointments','appointzilla'); ?></option>
-                            <option value="pending" <?php if(isset($_POST['filtername'])){ if($_POST['filtername'] == 'pending') echo "selected"; } ?> <?php if(isset($_GET['filtername'])){ if($_GET['filtername'] == 'pending') echo "selected"; } ?> > <?php _e('Pending Appointments','appointzilla'); ?></option>
-                            <option value="approved"  <?php if(isset($_POST['filtername'])){ if($_POST['filtername'] == 'approved') echo "selected"; } ?> <?php if(isset($_GET['filtername'])){ if($_GET['filtername'] == 'approved') echo "selected"; } ?>> <?php _e('Approved Appointments','appointzilla'); ?> </option>
-                            <option value="cancelled" <?php if(isset($_POST['filtername'])){ if($_POST['filtername'] == 'cancelled') echo "selected"; } ?> <?php if(isset($_GET['filtername'])){ if($_GET['filtername'] == 'cancelled') echo "selected"; } ?> ><?php _e('Cancelled Appointments','appointzilla'); ?></option>
-                            <option value="done"  <?php if(isset($_POST['filtername'])){ if($_POST['filtername'] == 'done') echo "selected"; } ?> <?php if(isset($_GET['filtername'])){ if($_GET['filtername'] == 'done') echo "selected"; } ?> ><?php _e('Done Appointments','appointzilla'); ?></option>
-                            <option value="today" <?php if(isset($_POST['filtername'])){ if($_POST['filtername'] == 'today') echo "selected"; } ?> <?php if(isset($_GET['filtername'])){ if($_GET['filtername'] == 'today') echo "selected"; } ?> ><?php _e('Today`s  Appointments','appointzilla'); ?></option>
-                            <option value="paid" <?php if(isset($_POST['filtername'])){ if($_POST['filtername'] == 'paid') echo "selected"; } ?> <?php if(isset($_GET['filtername'])){ if($_GET['filtername'] == 'paid') echo "selected"; } ?> ><?php _e('Paid Appointments','appointzilla'); ?></option>
-                            <option value="unpaid" <?php if(isset($_POST['filtername'])){ if($_POST['filtername'] == 'unpaid') echo "selected"; } ?> <?php if(isset($_GET['filtername'])){ if($_GET['filtername'] == 'unpaid') echo "selected"; } ?> ><?php _e('Unpaid Appointments','appointzilla'); ?></option>
-                        </select>
-                    </div>&nbsp;<button id="filter" class="btn btn-small btn-danger" type="submit" name="filter" ><i class="icon-search icon-white"></i>  <?php _e('Filter Appointments','appointzilla'); ?></button>
-                    &nbsp;<a href="#" rel="tooltip" title="<?php _e("Filter Appointments",'appointzilla')?>" ><i  class="icon-question-sign"></i></a>
+                        <input type="text" name='client_name' value="<?php echo $_POST[client_name]?>"/>
+                    </div>&nbsp;<button id="filter" class="btn btn-small btn-danger" type="submit" name="filter" ><i class="icon-search icon-white"></i>  <?php _e('Filter Clients','appointzilla'); ?></button>
+                    &nbsp;<a href="#" rel="tooltip" title="<?php _e("Filter Clients",'appointzilla')?>" ><i  class="icon-question-sign"></i></a>
                 </td>
             </tr>
         </table>
@@ -180,9 +171,10 @@
                 <td><em><?php echo _e(ucfirst($appointment->payment_status), 'appointzilla'); ?></em></td>
                 <td>
                     <a href="?page=update-appointment&viewid=<?php echo $appointment->id; ?>" title="<?php _e('View','appointzilla'); ?>" rel="tooltip"><i class="icon-eye-open"></i></a>&nbsp;
-                    <a href="?page=update-appointment&updateid=<?php echo $appointment->id; ?>" title="<?php _e('Update','appointzilla'); ?>" rel="tooltip"><i class="icon-pencil"></i></a>&nbsp;
+                    <?php if($appointment->payment_status!='paid'):?><a href="?page=update-appointment&updateid=<?php echo $appointment->id; ?>" title="<?php _e('Update','appointzilla'); ?>" rel="tooltip"><i class="icon-pencil"></i></a>&nbsp;
                     <a href="?page=manage-appointments&delete=<?php echo $appointment->id; ?>" rel="tooltip" title="<?php _e('Delete','appointzilla'); ?>"
-                    onclick="return confirm('<?php _e('Do you want to delete this appointment?','appointzilla'); ?>')"><i class="icon-remove" ></i></a></td>
+                    onclick="return confirm('<?php _e('Do you want to delete this appointment?','appointzilla'); ?>')"><i class="icon-remove" ></i></a>
+                    <?php endif;?></td>
                 <td align="left"><a rel="tooltip" title="<?php _e('Select','appointzilla'); ?>"><input type="checkbox" id="checkbox" name="checkbox[]" value="<?php echo $appointment->id; ?>" /></a></td>
             </tr>
               <?php $i++; }   ?>

@@ -88,6 +88,19 @@ function new_medical_cart_treatment_callback() {
     echo $result;
     die(); // this is required to return a proper result
 }
+add_action( 'wp_ajax_is_client_exists', 'is_client_exists_callback' );
+function is_client_exists_callback() {
+    global $wpdb; // this is how you get access to the database
+    $clientTable = $wpdb->prefix . "ap_clients";
+    $wpdb->get_row("SELECT * FROM $clientTable WHERE name LIKE '".trim($_POST[ClientFirstName])." ".trim($_POST[ClientLastName])."' AND phone = '$_POST[ClientPhone]'",ARRAY_A);
+    echo $wpdb->num_rows>0?'1':'0';
+    die(); // this is required to return a proper result
+}
+add_action( 'wp_ajax_export_to_pdf', 'export_to_pdf_callback' );
+function export_to_pdf_callback() {
+    echo file_get_contents(plugins_url('appointment-calendar-premium/menu-pages/tcpdf/examples/example_005.php'));
+    die(); // this is required to return a proper result
+}
 
 add_action('admin_menu','appointment_calendar_menu');
 
@@ -104,6 +117,8 @@ function appointment_calendar_menu() {
     // Data Save Page
     $SubMenu3 = add_submenu_page( '', 'Data Save', '', 'administrator', 'data_save', 'display_data_save_page' );
 
+    // Appointment Page
+    $SubMenu20 = add_submenu_page( 'appointment-calendar', __('Manage Appointments', 'appointzilla'), __('Manage Appointments', 'appointzilla'), 'contributor', 'manage-staff-appointments', 'display_staff_appointments_page' );
     // Service Page
     $SubMenu4 = add_submenu_page( 'appointment-calendar', __('Services', 'appointzilla'), __('Services', 'appointzilla'), 'administrator', 'service', 'display_service_page' );
     // manage Service Page
@@ -120,17 +135,16 @@ function appointment_calendar_menu() {
 
     //staff-calendar
     $SubMenu8 = add_submenu_page( 'appointment-calendar', __('Staff Calendar', 'appointzilla'), __('Staff Calendar', 'appointzilla'), 'contributor', 'staff-appointment-calendar', 'display_staff_appointment_calendar_page' );
-    $SubMenu20 = add_submenu_page( 'appointment-calendar', __('Manage Appointments', 'appointzilla'), __('Manage Appointments', 'appointzilla'), 'contributor', 'manage-staff-appointments', 'display_staff_appointments_page' );
 
-    // Time-Off Page
-    $SubMenu9 = add_submenu_page( 'appointment-calendar', 'Time Off', __('Time Off', 'appointzilla'), 'administrator', 'timeoff', 'display_timeoff_page' );
-    // Update Time-Off Page
-    $SubMenu10 = add_submenu_page( '', 'Update TimeOff', '', 'administrator', 'update-timeoff', 'display_update_timeoff_page' );
 
+    //client-calendar
+    $SubMenu22 = add_submenu_page( 'appointment-calendar', __('Appointment Calendar', 'appointzilla'), __('Appointment Calendar', 'appointzilla'), 'subscriber', 'client-appointment-calendar', 'display_client_appointment_calendar_page' );
+    $SubMenu23 = add_submenu_page( 'appointment-calendar', __('Your Appointments', 'appointzilla'), __('Your Appointments', 'appointzilla'), 'subscriber', 'manage-client-appointments', 'display_client_mange_appointments_page' );
+    $SubMenu24 = add_submenu_page( '', 'Update Appointment', '', 'subscriber', 'update-client-appointment', 'display_update_client_appointment_page' );
     // Client Page
     $SubMenu11 = add_submenu_page( 'appointment-calendar', __('Clients', 'appointzilla'), __('Clients', 'appointzilla'), 'administrator', 'client', 'display_client_page' );
     $SubMenu12 = add_submenu_page( '', 'Client Manage', '','administrator', 'client-manage', 'display_manage_client_page' );
-    $SubMenu25 = add_submenu_page( 'appointment-calendar', 'Medical Cart Manage', 'Medical Cart','administrator', 'medical_cart', 'display_medical_cart_page' );
+    $SubMenu25 = add_submenu_page( 'appointment-calendar', 'Medical Cart Manage', __('Medical Cart', 'appointzilla'),'administrator', 'medical_cart', 'display_medical_cart_page' );
 
     // Manage Appointment Page
     $SubMenu13 = add_submenu_page( 'appointment-calendar', __('Admin Appointments', 'appointzilla'), __('Appointments', 'appointzilla'), 'administrator', 'manage-appointments', 'display_manage_appointment_page' );
@@ -138,26 +152,17 @@ function appointment_calendar_menu() {
     $SubMenu14 = add_submenu_page( '', 'Update Appointment', '', 'administrator', 'update-appointment', 'display_update_appointment_page' );
 
 
-    //Export Appointments & Client List
-    $SubMenu19 = add_submenu_page('appointment-calendar', __('Export Lists', 'appointzilla'), __('Export Lists', 'appointzilla'), 'administrator', 'export-lists', 'display_export_lists_page' );
-
     $SubMenu30 = add_submenu_page('appointment-calendar', __('Report', 'appointzilla'), __('Report', 'appointzilla'), 'administrator', 'report', 'display_report_page' );
 
-    //Coupon Codes
-    //$SubMenu21 = add_submenu_page('appointment-calendar', __('Coupons Codes', 'appointzilla'), __('Coupons Codes', 'appointzilla'), 'administrator', 'apcal-coupons-codes', 'display_coupons_codes_page' );
+    //Export Appointments & Client List
+    $SubMenu19 = add_submenu_page('appointment-calendar', __('Export Lists', 'appointzilla'), __('Export Lists', 'appointzilla'), 'administrator', 'export-lists', 'display_export_lists_page' );
+    // Time-Off Page
+    $SubMenu9 = add_submenu_page( 'appointment-calendar', 'Time Off', __('Time Off', 'appointzilla'), 'administrator', 'timeoff', 'display_timeoff_page' );
+    // Update Time-Off Page
+    $SubMenu10 = add_submenu_page( '', 'Update TimeOff', '', 'administrator', 'update-timeoff', 'display_update_timeoff_page' );
 
     // Settings Page
     $SubMenu15 = add_submenu_page( 'appointment-calendar', __('Settings', 'appointzilla'), __('Settings', 'appointzilla'), 'administrator', 'app-calendar-settings', 'display_settings_page' );
-
-    // Remove Plugin
-
-    // Support &
-    $SubMenu17 = add_submenu_page( 'appointment-calendar', __('Help & Support', 'appointzilla'), __('Help & Support', 'appointzilla'), 'administrator', 'support-n-help', 'display_support_n_help_page' );
-
-    //client-calendar
-    $SubMenu22 = add_submenu_page( 'appointment-calendar', __('Appointment Calendar', 'appointzilla'), __('Appointment Calendar', 'appointzilla'), 'subscriber', 'client-appointment-calendar', 'display_client_appointment_calendar_page' );
-    $SubMenu23 = add_submenu_page( 'appointment-calendar', __('Your Appointments', 'appointzilla'), __('Your Appointments', 'appointzilla'), 'subscriber', 'manage-client-appointments', 'display_client_mange_appointments_page' );
-    $SubMenu24 = add_submenu_page( '', 'Update Appointment', '', 'subscriber', 'update-client-appointment', 'display_update_client_appointment_page' );
 
     add_action( 'admin_print_styles-' . $Menu, 'calendar_css_js' );
     //calendar
@@ -288,17 +293,17 @@ add_action( 'wp', 'shortcode_detect' );
  function display_calendar_page() {
      require_once('menu-pages/calendar.php');
  }
- 
+
  //time slot page
  function display_time_slot_page() {
      require_once("menu-pages/appointment-form2.php");
  }
- 
+
  //appointment save page
  function display_data_save_page() {
      require_once("menu-pages/data_save.php");
  }
- 
+
  //service page
  function display_service_page() {
      require_once("menu-pages/service.php");
@@ -391,7 +396,7 @@ function display_report_page() {
  function display_support_n_help_page() {
      require_once("menu-pages/supportnhelp.php");
  }
- 
+
  //staff calendar page
  function display_staff_appointment_calendar_page() {
      require_once("menu-pages/staff-appointment-calendar.php");
@@ -460,6 +465,14 @@ function my_admin_scripts() {
 		wp_enqueue_script( 'my-admin-js',WP_PLUGIN_URL.'/my-plugin/my-admin.js', array('jquery') );
     }
 }
+add_action('print_medical_cart', 'print_medical_cart_callback');
+
+function print_medical_cart_callback()
+{
+    $PDFPrinter = new PDFPrinter();
+    $PDFPrinter->printMedicalCart($_GET);
+    exit();
+}
 
 add_action( 'admin_init', 'include_classes' );
 
@@ -473,4 +486,9 @@ function include_classes()
     include_once($pluginDIR.'/menu-pages/includes/MedicalCartController.php');
     include_once($pluginDIR.'/menu-pages/includes/PrintView.php');
     include_once($pluginDIR.'/menu-pages/includes/ReportController.php');
+    include_once($pluginDIR.'/menu-pages/includes/ReportController.php');
+    include_once($pluginDIR.'/menu-pages/includes/PdfPrinter.php');
+    if ($_GET[action]=='print' && $_GET[page]='medical_cart'){
+        do_action('print_medical_cart');
+    }
 }

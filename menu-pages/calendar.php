@@ -11,7 +11,7 @@ $staff_table = $wpdb->prefix."ap_staff";
 $EventTableName = $wpdb->prefix."ap_events";
 $Select = 0;
 
-require_once('appointzilla-class.php');
+require_once('includes/appointzilla-class.php');
 
 $AppointZilla = new Appointzilla();
 //check 2 way sync enable
@@ -435,7 +435,6 @@ jQuery(document).ready(function() {
 // end of document.ready()
 
 function LoadSecondModal() {
-    var ServiceId = jQuery('#servicelist').val();
     var AppDate = jQuery('#appdate').val();
     var StaffId = jQuery('#stafflist').val();
     var CabinetID =  jQuery('#cabinetlist').val();
@@ -451,7 +450,7 @@ function LoadSecondModal() {
         data : SecondData,
         complete : function() {  },
         success: function(data) {
-            data = jQuery(data).find('div#SecondModal');
+            data = jQuery(data).find('div#AppSecondModalData');
             jQuery('#loading1').hide();
             jQuery('#AppFirstModal').hide();
             jQuery('#AppSecondModal').show();
@@ -467,25 +466,31 @@ function LoadSecondModal2() {
 }
 
 //load first modal on click back1
-function loadfirstmodal() {
+function LoadFirstModal() {
     jQuery('#AppSecondModal').hide()
     jQuery('#AppFirstModal').show();
     jQuery('#next1').show();
 }
 
 //load third modal on-click next2
-function loadthirdmodal() {
+function LoadThirdModal() {
     //validation on second modal form
     var AppDate = jQuery('#AppDate').val();
     var StaffId = jQuery('#StaffId').val();
     var CabinetID = jQuery('#CabinetID').val();
-    var Start_Time =  jQuery('.start_time:checked').val();
-    var RepeatUnit = 'NULL';
-    if (Start_Time==null){
-        alert("<?php echo __('Please, Select Stat Time.', 'appointzilla'); ?>");
+    var Start_Time = jQuery('select[name=start_time]').val();
+    var End_Time = jQuery('select[name=end_time]').val();
+
+    if(!Start_Time || !End_Time) {
+        jQuery("#time_slot_box").after("<span style='width:auto; margin-left:5%;' class='error'><strong><?php _e('Select any time.', 'appointzilla'); ?></strong></span>");
         return false;
     }
-    var ThirdData = "AppDate=" + AppDate + "&StaffId=" + StaffId + "&StartTime=" + Start_Time  + "&CabinetID=" + CabinetID;
+    if (Start_Time>=End_Time){
+        jQuery("#time_slot_box").after("<span style='width:auto; margin-left:5%;' class='error'><strong><?php _e('Start Time cannot be bigger than End Time.', 'appointzilla'); ?></strong></span>");
+        return false;
+    }
+
+    var ThirdData = "AppDate=" + AppDate + "&StaffId=" + StaffId + "&StartTime=" + Start_Time + "&EndTime=" + End_Time + "&CabinetID=" + CabinetID;
 
     var url = "?page=appointment-calendar";
     jQuery('#buttondiv').hide();
@@ -621,24 +626,11 @@ function starttimechange() {
          jQuery('#end_time_error').hide();
     }
 }
-
-//recurring start date load date-picker
-function loadstartdate() {
-    jQuery(function(){
-        jQuery('#re_start_date').datepicker({
-            minDate: 0,
-            dateFormat: "<?php echo $DPFormat; ?>"
-        });
-    });
- }
-
-function loadenddate() {
-    jQuery(function(){
-        jQuery('#re_end_date').datepicker({
-            minDate: 0,
-            dateFormat: "<?php echo $DPFormat; ?>"
-        });
-    });
+function TryAgainBooking() {
+    jQuery("#check-email-result-div").hide();
+    jQuery("#check-user").show();
+    jQuery('#check-email-div-form').show();
+    jQuery("#existing-user-form-btn").show();
 }
 
 function staffChanged()
@@ -728,13 +720,43 @@ function CheckValidation(UserType,e) {
             jQuery(".client-phone").after("<span class='error'>&nbsp;<br><strong><?php _e("Phone required", "appointzilla"); ?></strong></span>");
             return false;
         }
+        var data = {
+            'action':'is_client_exists',
+            'ClientFirstName': ClientFirstName,
+            'ClientLastName': ClientLastName,
+            'ClientPhone': ClientPhone
+        };
+        jQuery.post(ajaxurl, data, function(response) {
+            if (response==1){
+                jQuery('#new-user-form-loading-img').hide();
+                alert('<?php _e('Such Client Already Exists', 'appointzilla'); ?>');
+                return false;
+            }
+            else{
+                var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime="+EndTime;
+                var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientLastName=" + ClientLastName + "&ClientPhone=" + ClientPhone + "&ClientEmail=" + ClientEmail + "&ClientNote=" + ClientSi + "&ClientOccupation=" + ClientOccupation + "&ClientAddress =" + ClientAddress;
+                var PostData = PostData1 +  PostData3;
 
-        var PostData1 = "Action=BookAppointment"+ "&AppDate=" + AppDate + "&StaffId=" + StaffId+ "&CabinetId=" + CabinetId + "&StartTime=" + StartTime+"&EndTime="+EndTime;
-        var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientLastName=" + ClientLastName + "&ClientPhone=" + ClientPhone + "&ClientEmail=" + ClientEmail + "&ClientNote=" + ClientSi + "&ClientOccupation=" + ClientOccupation + "&ClientAddress =" + ClientAddress;
-        var PostData = PostData1 +  PostData3;
-
-        jQuery('#new-user-form-rebtn-div').hide();
-        jQuery('#new-user-form-loading-img').show();
+                jQuery('#new-user-form-rebtn-div').hide();
+                jQuery('#new-user-form-loading-img').show();
+                jQuery.ajax({
+                    dataType : 'html',
+                    type: 'POST',
+                    url : location.href,
+                    cache: false,
+                    data : PostData,
+                    complete : function() {  },
+                    success: function(data) {
+                        data = jQuery(data).find('div#AppForthModalData');
+                        jQuery("#new-user-form-loading-img").hide();
+                        jQuery("#check-email-div-form").hide();
+                        jQuery("#AppThirdModal").hide();
+                        jQuery('#AppForthModalFinal').show();
+                        jQuery('#AppForthModalFinal').html(data);
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -763,26 +785,26 @@ function CheckValidation(UserType,e) {
         var PostData2 = "&UserType=" + UserType + "&ClientEmail=" + ClientEmail;
         var PostData3 =  "&ClientFirstName=" + ClientFirstName + "&ClientPhone=" + ClientPhone+'&clientID='+ClientID;
         var PostData = PostData1 + PostData2 + PostData3;
-
+        jQuery.ajax({
+            dataType : 'html',
+            type: 'POST',
+            url : location.href,
+            cache: false,
+            data : PostData,
+            complete : function() {  },
+            success: function(data) {
+                data = jQuery(data).find('div#AppForthModalData');
+                jQuery("#new-user-form-loading-img").hide();
+                jQuery("#check-email-div-form").hide();
+                jQuery("#AppThirdModal").hide();
+                jQuery('#AppForthModalFinal').show();
+                jQuery('#AppForthModalFinal').html(data);
+            }
+        });
         jQuery('#ex-user-form-btn-div').hide();
         jQuery('#ex-user-form-loading-img').show();
     }
-    jQuery.ajax({
-        dataType : 'html',
-        type: 'POST',
-        url : location.href,
-        cache: false,
-        data : PostData,
-        complete : function() {  },
-        success: function(data) {
-            data = jQuery(data).find('div#AppForthModalData');
-            jQuery("#new-user-form-loading-img").hide();
-            jQuery("#check-email-div-form").hide();
-            jQuery("#AppThirdModal").hide();
-            jQuery('#AppForthModalFinal').show();
-            jQuery('#AppForthModalFinal').html(data);
-        }
-    });
+
     jQuery('#formbtndiv').hide();
     jQuery('#sheduling').show();
 }
@@ -1027,11 +1049,9 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
     <div id="loading1" style="display:none;"><?php _e('Loading...', 'appointzilla'); ?><img src="<?php echo plugins_url("images/loading.gif", __FILE__); ?>" />
 <?php
 }?>
-
-
 <!---loading second modal form ajax return code--->
 <?php if( isset($_GET['AppDate']) && isset($_GET['StaffId'])  && !isset($_GET['StartTime'])) { ?>
-        <?php require_once('admin-time-slot-calculation.php'); ?>
+        <?php require_once('includes/shortcode-time-slot-calculation.php'); ?>
 <?php } ?>
 
 

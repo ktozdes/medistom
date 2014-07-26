@@ -18,7 +18,10 @@ class AppointmentController
         $staff_table_name   = $wpdb->prefix . "ap_staff";
         $clients_table   = $wpdb->prefix . "ap_clients";
         $treatment_table   = $wpdb->prefix . "ap_treatment";
-        $AppointmentDetails = $wpdb->get_row("SELECT *,$clients_table.name as clientName, $clients_table.phone as clientPhone, $clients_table.email as clientEmail FROM `$appointment_table` INNER JOIN $clients_table on $clients_table.id = $appointment_table.client_id WHERE $appointment_table.`id` ='$params[appointmentID]'",ARRAY_A);
+        $AppointmentDetails = $wpdb->get_row("SELECT *,$clients_table.name as clientName, $clients_table.phone as clientPhone, $clients_table.email as clientEmail FROM `$appointment_table`
+        INNER JOIN $clients_table on $clients_table.id = $appointment_table.client_id
+        INNER JOIN ms_ap_cabinets ON ms_ap_cabinets.cabinet_id = ms_ap_appointments.cabinet_id
+        WHERE $appointment_table.`id` ='$params[appointmentID]'",ARRAY_A);
         ?>
         <table width="100%" class="table table-hover" >
             <tr>
@@ -29,7 +32,17 @@ class AppointmentController
             <tr>
                 <th scope="row"><?php _e('Client Info', 'appointzilla', 'appointzilla'); ?></th>
                 <td><strong>:</strong></td>
-                <td><?php _e('Name', 'appointzilla', 'appointzilla'); ?>:<?php echo $AppointmentDetails[clientName]; ?> <?php _e('Phone', 'appointzilla'); ?>:<?php echo $AppointmentDetails[clientPhone]; ?></td>
+                <td><?php echo $AppointmentDetails[clientName]; ?></td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Client Phone', 'appointzilla', 'appointzilla'); ?></th>
+                <td><strong>:</strong></td>
+                <td><?php echo $AppointmentDetails[clientPhone]; ?></td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Cabinet', 'appointzilla', 'appointzilla'); ?></th>
+                <td><strong>:</strong></td>
+                <td><?php echo $AppointmentDetails[cabinet_name]; ?></td>
             </tr>
             <tr>
                 <th scope="row"><strong><?php _e('Staff', 'appointzilla'); ?></strong></th>
@@ -171,6 +184,7 @@ class AppointmentController
     public function getPaymentTab($params)
     {
         global $wpdb;
+        $client_table               = $wpdb->prefix . "ap_clients";
         $service_table              = $wpdb->prefix . "ap_services";
         $appointment_service_table  = $wpdb->prefix . "ap_appointment_service";
         $payment_table              = $wpdb->prefix . "ap_payment_transaction";
@@ -178,6 +192,7 @@ class AppointmentController
         $ServicesList = $wpdb->get_results("SELECT cost, discount, (SELECT sum( ammount )FROM $payment_table  WHERE app_id =$params[appointmentID]) AS paid  FROM $appointment_service_table
         INNER JOIN $service_table on $appointment_service_table.service_id = $service_table.id
         WHERE `appointment_id` = $params[appointmentID]",ARRAY_A);
+
         if (count($ServicesList)>0){
         $total = $this->getTotalPrice($params[appointmentID]);?>
     <div class="payment_container">
@@ -186,7 +201,9 @@ class AppointmentController
                 <td><strong><?php _e('Full Price', 'appointzilla'); ?> : </strong><?php echo $total[full_price]; ?></td>
                 <td><strong><?php _e('Discount Price', 'appointzilla'); ?> : </strong><?php echo $total[discount_price]; ?></td>
                 <td><strong><?php _e('Paid', 'appointzilla'); ?> : </strong><?php echo $total[paid]; ?></td>
-                <td><strong><?php _e('Left', 'appointzilla'); ?> : </strong><?php echo ($total[discount_price] - $total[paid]); ?></td>
+                <td><strong><?php _e('Balance', 'appointzilla'); ?> : </strong><?php echo ($total[total_left]*(-1)); ?></td>
+                <td><strong><?php _e('Left', 'appointzilla'); ?> : </strong><?php echo ($total[discount_price] - $total[paid]+$total[total_left]); ?></td>
+
             </tr>
         </table>
         <?php $PaymentList = $wpdb->get_results("SELECT * FROM $payment_table
@@ -194,7 +211,7 @@ class AppointmentController
         if (count($PaymentList)>0):?>
             <table  class="table table-hover" style="width:100%">
                 <tr>
-                    <td><strong><?php _e('Ammount','appointzilla');?></strong></td>
+                    <td><strong><?php _e('Amount','appointzilla');?></strong></td>
                     <td><strong><?php _e('Date','appointzilla');?></strong></td>
                     <td><strong><?php _e('Status','appointzilla');?></strong></td>
                     <td><strong><?php _e('Action','appointzilla');?></strong></td>
@@ -219,8 +236,7 @@ class AppointmentController
             <table style="width: 100% ">
                 <tr>
                     <th scope="row"><strong><?php _e('Amount', 'appointzilla'); ?>:</strong></th>
-                    <td><input type="text" class="amount" value=""/></td>
-                    <td><a href="javascript:void(0)" onclick="newPayment(<?php echo $params[appointmentID];?>)" class="btn "><?php _e('Pay', 'appointzilla'); ?></a></td>
+                    <td colspan="2"><input type="text" class="amount" value=""/>&nbsp;<a href="javascript:void(0)" onclick="newPayment(<?php echo $params[appointmentID];?>)" class="btn btn-warning"><?php _e('Pay', 'appointzilla'); ?></a></td>
                 </tr>
             </table>
         </div>
@@ -317,29 +333,35 @@ class AppointmentController
 		$AppointmentsTable = $wpdb->prefix ."ap_appointments";
 		$reminder_table = $wpdb->prefix ."ap_reminders";
 		$client_table = $wpdb->prefix ."ap_clients";
-		
-		$CreateAppointments = "INSERT INTO `$AppointmentsTable` (`id` ,`name` ,`email` ,`staff_id` ,`cabinet_id` ,`phone` ,`start_time` ,`end_time` ,`date` ,`note` , `appointment_key` ,`status` ,`recurring` ,`recurring_type` ,`appointment_by`, `payment_status`) VALUES ('NULL', '$_POST[ClientFirstName]', '$_POST[ClientEmail]', '$_POST[StaffId]','$_POST[CabinetId]', '$_POST[ClientPhone]', '$_POST[StartTime]', '$_POST[EndTime]', '$_POST[AppDate]', '', '$AppointmentKey', '$Status', '$Recurring', '$RecurringType', '$AppointmentBy', '$PaymentStatus');";
+
+        $ClientTable = $wpdb->prefix."ap_clients";
+
+        if (isset($_POST[clientID])){
+            $ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `id` = $_POST[clientID]",ARRAY_A);
+            $_POST[ClientFirstName] = $ExistClientDetails[name];
+            $_POST[ClientEmail] = $ExistClientDetails[email];
+            $_POST[ClientPhone] = $ExistClientDetails[phone];
+            $LastClientId = $_POST[clientID];
+        }
+        else{
+            $ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `email` = '".$_POST[ClientEmail]."' OR (`name` like '%".$_POST[ClientFirstName]."%'");
+            if(count($ExistClientDetails)) {
+                $LastClientId = $ExistClientDetails->id;
+            } else {
+                // insert new client deatils
+                $InsertClient = "INSERT INTO `$ClientTable` (`name` ,`email` ,`phone`,address,occupation ,`note`) VALUES ('$_POST[ClientFirstName]', '$_POST[ClientEmail]', '$_POST[ClientPhone]','$_POST[ClientAddress_]', '$_POST[ClientOccupation]', '$_POST[ClientNote]', '" .serialize(array('balance'=>0)). "');";
+                if($wpdb->query($InsertClient)) {
+                    $LastClientId = mysql_insert_id();
+                }
+            }
+        }
+
+		$CreateAppointments = "INSERT INTO `$AppointmentsTable` (`name`, `phone`, `email`,client_id, `staff_id` ,`cabinet_id` ,`start_time` ,`end_time` ,`date` ,`note` , `appointment_key` ,`status` ,`recurring` ,`recurring_type` ,`appointment_by`, `payment_status`)
+		VALUES ('$_POST[ClientFirstName]', '$_POST[ClientPhone]', '$_POST[ClientEmail]',$LastClientId, '$_POST[StaffId]','$_POST[CabinetId]', '$_POST[StartTime]', '$_POST[EndTime]', '$_POST[AppDate]', '', '$AppointmentKey', '$Status', '$Recurring', '$RecurringType', '$AppointmentBy', '$PaymentStatus');";
 		if($wpdb->query($CreateAppointments)) {
 			$LastAppointmentId = mysql_insert_id();
-			$ClientTable = $wpdb->prefix."ap_clients";
-			$ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `email` = '".$_POST[ClientEmail]."' OR (`name` like '%".$_POST[ClientFirstName]."%'");
-			if(count($ExistClientDetails)) {
-				// update  exiting client deatils
-				$LastClientId = $ExistClientDetails->id;
-			} else {
-				// insert new client deatils
-				$InsertClient = "INSERT INTO `$ClientTable` (`id` ,`name` ,`email` ,`phone`,address,occupation ,`note`) VALUES ('NULL', '$_POST[ClientFirstName]', '$_POST[ClientEmail]', '$_POST[ClientPhone]','$_POST[ClientAddress_]', '$_POST[ClientOccupation]', '$_POST[ClientNote]');";
-				if($wpdb->query($InsertClient)) {
-					$LastClientId = mysql_insert_id();
-				}
-			}
-			$wpdb->update(
-				$AppointmentsTable,
-				array('client_id'=>$LastClientId),
-				array(id=>$LastAppointmentId)
-			);
 			//sending mail to staff
-            $clientData = $wpdb->get_row("SELECT * FROM $client_table WHERE id = $_POST[StaffId]",ARRAY_A);
+            $clientData = $wpdb->get_row("SELECT * FROM $client_table WHERE id = $LastClientId",ARRAY_A);
             $appDate = DateTime::createFromFormat('Y-m-d', $_POST[AppDate]);
 			add_filter( 'wp_mail_content_type', 'set_html_content_type' );
 
@@ -368,21 +390,46 @@ class AppointmentController
 	public function getTotalPrice($appID)
     {
         global $wpdb;
-        $appointment_service_table = $wpdb->prefix . "ap_appointment_service";
-        $service_table          = $wpdb->prefix . "ap_services";
-        $payment_table          = $wpdb->prefix . "ap_payment_transaction";
+        $appointment_table          = $wpdb->prefix . "ap_appointments";
+        $appointment_service_table  = $wpdb->prefix . "ap_appointment_service";
+        $service_table              = $wpdb->prefix . "ap_services";
+        $client_table               = $wpdb->prefix . "ap_clients";
+        $payment_table              = $wpdb->prefix . "ap_payment_transaction";
         $returnValue = array();
+        $totalPayment = array();
+
+
+        $appointmentDetails = $wpdb->get_row("SELECT balance, $appointment_table.client_id  FROM $appointment_table
+            INNER JOIN $client_table on $client_table.id = $appointment_table.client_id
+        WHERE $appointment_table.`id` = $appID",ARRAY_A);
+
+        //all other appointment payments
+        $ServiceDetails = $wpdb->get_results("SELECT cost, discount, if(LOCATE('%', discount)>0,cost*(100-discount)/100,cost-discount) as discount_price, (SELECT sum( ammount ) FROM $payment_table WHERE client_id =$appointmentDetails[client_id] AND app_id != $appID) AS paid FROM $appointment_service_table
+INNER JOIN $service_table on $appointment_service_table.service_id = $service_table.id
+INNER JOIN $appointment_table on $appointment_service_table.appointment_id = $appointment_table.id
+WHERE $appointment_table.client_id = $appointmentDetails[client_id] AND $appointment_service_table.appointment_id != $appID", ARRAY_A);
+        foreach($ServiceDetails as $service) {
+            $totalPayment[full_price] += $service[cost];
+            $totalPayment[discount_price] += $service[discount_price];
+            $totalPayment[paid] = $service[paid];
+        }
+        $totalPayment[total_left] = $totalPayment[discount_price] - $totalPayment[paid];
+
+        //this appointment payment
         $ServiceDetails = $wpdb->get_results("SELECT cost, discount, (SELECT sum( ammount ) FROM $payment_table WHERE app_id =$appID) AS paid
             FROM $appointment_service_table
             INNER JOIN $service_table  on $appointment_service_table.service_id = $service_table.id
             WHERE $appointment_service_table.appointment_id = $appID", ARRAY_A);
-        //echo $wpdb->last_query;
+
         foreach($ServiceDetails as $service) {
             $returnValue[full_price] += $service[cost];
             $returnValue[discount_price] += (strpos($service[discount],'%')!==false) ? round($service[cost]*(100-$service[discount])/100,2) :
                 round($service[cost]-$service[discount]);
             $returnValue[paid] = $service[paid];
+            $totalPayment[full_price] += $service[cost];
+            $totalPayment[discount_price] += (strpos($service[discount],'%')!==false) ? round($service[cost]*(100-$service[discount])/100,2) : round($service[cost]-$service[discount]);
         }
+        $returnValue[total_left] = $totalPayment[total_left];
         return $returnValue;
     }
 
@@ -416,14 +463,23 @@ class AppointmentController
         $note = strip_tags($_POST['app_desc']);
         $payment_status = strip_tags($_POST['payment_status']);
         $status =  $_POST['app_status'];
-        $recurring = $_POST['recurring'];
-        $recurring_type = $_POST['recurring_type'];
         $recurring_st_date = date("Y-m-d", strtotime($_POST['recurring_st_date'])); //$_POST['recurring_st_date'];
         $recurring_ed_date = date("Y-m-d", strtotime($_POST['recurring_ed_date'])); //$_POST['recurring_ed_date'];
-        $appointment_by = $_POST['app_appointment_by'];
         $AppointmentTable = $wpdb->prefix . "ap_appointments";
         $appointment_service_table = $wpdb->prefix . "ap_appointment_service";
-        $result = $wpdb->query("UPDATE `$AppointmentTable` SET `staff_id` = '$staffid', treatment_id = $treatmentID,  `start_time` = '$start_time', `end_time` = '$end_time', `date` = '$appointmentdate', `note` = '$note', `status` = '$status', `recurring` = '$recurring', `recurring_type` = '$recurring_type', `recurring_st_date` = '$recurring_st_date', `recurring_ed_date` = '$recurring_ed_date', `payment_status` = '$payment_status' WHERE `id` = '$up_app_id'");
+        $service_table = $wpdb->prefix . "ap_services";
+        $client_table = $wpdb->prefix . "ap_clients";
+        $result = $wpdb->query("UPDATE `$AppointmentTable` SET `staff_id` = '$staffid', treatment_id = $treatmentID,  `start_time` = '$start_time', `end_time` = '$end_time', `date` = '$appointmentdate', `note` = '$note', `status` = '$status', `recurring_st_date` = '$recurring_st_date', `recurring_ed_date` = '$recurring_ed_date', `payment_status` = '$payment_status' WHERE `id` = '$up_app_id'");
+
+        $appServices = $wpdb->get_results("SELECT client_id, INSTR( `discount` , '%' ) , if( INSTR( `discount` , '%' ) >0, ( 100 - discount ) /100 * cost, cost - discount ) AS 'price'
+FROM `$appointment_service_table`
+INNER JOIN `$service_table` ON `$service_table`.id = $appointment_service_table.service_id
+INNER JOIN $AppointmentTable ON $AppointmentTable.id = $appointment_service_table.appointment_id
+            WHERE appointment_id = $up_app_id",ARRAY_A);
+        foreach($appServices as $singleAppService){
+            $wpdb->query("UPDATE $client_table set balance = balance + $singleAppService[price] WHERE id = $singleAppService[client_id]");
+        }
+
         if($result!==false) {
             //saving services
             $wpdb->delete( $appointment_service_table, array( 'appointment_id' => $up_app_id ) );
@@ -435,6 +491,13 @@ class AppointmentController
                         'discount'=>$_POST[discount][$key],
                         'update_date'=>date('Y-m-d')
                     ));
+                $appServiceID = $wpdb->insert_id;
+                $appService = $wpdb->get_row("SELECT client_id, INSTR( `discount` , '%' ) , if( INSTR( `discount` , '%' ) >0, ( 100 - discount ) /100 * cost, cost - discount ) AS 'price'
+FROM `$appointment_service_table`
+INNER JOIN `$service_table` ON `$service_table`.id = $appointment_service_table.service_id
+INNER JOIN $AppointmentTable ON $AppointmentTable.id = $appointment_service_table.appointment_id
+            WHERE $appointment_service_table.id = $appServiceID",ARRAY_A);
+                $wpdb->query("UPDATE $client_table set balance = balance - $appService[price] WHERE id = $appService[client_id]");
             }
             //send notification to client if appointment approved or cancelled
             if($status == 'approved' || $status == 'cancelled' ) {

@@ -4,7 +4,7 @@
         <input name="CabinetID" id="CabinetID" type="hidden" value="<?php if(isset($_GET['CabinetID'])) { echo $_GET['CabinetID']; } ?>" />
         <input name="AppDate" id="AppDate" type="hidden" value="<?php if(isset($_GET['AppDate'])) { echo $_GET['AppDate']; } ?>" />
         <input name="StartTime" id="StartTime" type="hidden" value="<?php if(isset($_GET['StartTime'])) { echo $_GET['StartTime']; } ?>" />
-        <input name="EndTime" id="EndTime" type="hidden" value="<?php if(isset($_GET['StartTime'])) { echo date($TimeFormat, strtotime($_GET['StartTime'] . "+1 hour")); } ?>" />
+        <input name="EndTime" id="EndTime" type="hidden" value="<?php if(isset($_GET['EndTime'])) { echo $_GET['EndTime']; } ?>" />
         <div class="apcal_modal-info alert alert-info">
             <a href="javascript:void(0)" onclick="CloseModelform()" style="float:right; margin-right:40px; margin-top:21px;" id="close" ><i class="icon-remove"></i></a>
             <div class="apcal_alert apcal_alert-info">
@@ -12,7 +12,10 @@
                 <?php _e('Step 3. Complete Your Booking', 'appointzilla'); ?>
             </div>
         </div>
-
+        <div class="apcal_alert apcal_alert-info" style="margin:10px">
+            <?php echo __('Start Time', 'appointzilla').':'.$_GET['StartTime']; ?>
+            <?php echo __('End Time', 'appointzilla').':'.$_GET['EndTime']; ?>
+        </div>
         <div class="apcal_modal-body">
             <?php if($AllCalendarSettings['apcal_user_registration'] == "yes") { ?>
                 <!--check user div-->
@@ -89,15 +92,29 @@
                                 <th scope="row"><?php _e('Email or Name', 'appointzilla'); ?></th>
                                 <td><strong>:</strong></td>
                                 <td><input name="check-client-email" type="text" id="check-client-email" style="height:30px;" /></td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
                                 <td>
                                     <div id="existing-user-form-btn">
                                         <button type="button" class="apcal_btn apcal_btn-success" id="check-existing-user" name="check-existing-user" onclick="return CheckExistingUser();"><i class="icon-search icon-white"></i> <?php _e('Search', 'appointzilla'); ?></button>
                                     </div>
-                                    <div id="existing-user-loading-img" style="display:none;"><?php _e('Searching, please wait...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
+                                    <div id="existing-user-loading-img" style="display:none;"><?php _e('Searching, please wait...', 'appointzilla'); ?></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php _e('Select Client', 'appointzilla'); ?></th>
+                                <td><strong>:</strong></td>
+                                <td>
+                                    <select class="client-id">
+                                        <?php
+                                        $client_table = $wpdb->prefix . "ap_clients";
+                                        $client_list = $wpdb->get_results("SELECT * FROM `$client_table` ORDER BY name ASC",ARRAY_A);
+                                        foreach($client_list as $singleClient):?>
+                                            <option value="<?php echo $singleClient[id]?>"><?php echo $singleClient[name].' ( '.__('Phone','appointzilla').' : '. $singleClient[phone].' ) ';?></option>
+                                        <?php endforeach;?>
+                                    </select>
+                                <td>
+                                    <div id="existing-user-form-btn">
+                                        <button type="button" class="apcal_btn apcal_btn-success" id="ex-book-now" name="ex-book-now" onclick="return CheckValidation('ExUser',this,true);"><i class="icon-ok icon-white"></i> <?php _e('Book Now', 'appointzilla'); ?></button>
+                                    </div>
                                 </td>
                             </tr>
                         </table>

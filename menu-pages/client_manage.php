@@ -6,6 +6,12 @@ if(isset($_POST['clientupdate'])) {
     $client_up_id = $_POST['clientupdate'];
     $table_client = $wpdb->prefix . "ap_clients";
     $table_question_user = $wpdb->prefix . "ap_questionary_relationship";
+
+    if ($_POST[additional_data][new_name]!='' && $_POST[additional_data][new_value]!=''){
+        $_POST[additional_data][$_POST[additional_data][new_name]] = $_POST[additional_data][new_value];
+    }
+    unset($_POST[additional_data][new_name]);
+    unset($_POST[additional_data][new_value]);
     $result = $wpdb->update(
         $table_client,
         array(
@@ -14,21 +20,24 @@ if(isset($_POST['clientupdate'])) {
             'phone' => $_POST['client_phone'],
             'address' => $_POST['address'],
             'occupation' => $_POST['occupation'],
-            'note' => strip_tags($_POST['client_desc'])
+            'note' => strip_tags($_POST['client_desc']),
+            'balance' => strip_tags($_POST['balance']),
+            'additional_data' => serialize($_POST[additional_data])
         ),
         array(
         'id' => $client_up_id
         )
     );
     if($result!==false) {
-        foreach($_POST['question_id'] as $key=>$value){
+        $result = array();
         $wpdb->delete(
-                $table_question_user,
+            $table_question_user,
             array(other_table_id=>$client_up_id,
                 other_table_name=>'user_table',
                 value=>'on'
             )
         );
+        foreach($_POST['question_id'] as $key=>$value){
         $wpdb->get_row("SELECT * FROM $table_question_user WHERE other_table_id= $client_up_id and question_id =$key AND other_table_name = 'user_table'");
         if ($wpdb->num_rows>0 && $client_up_id>0 && $key>0){
             $wpdb->update(
@@ -53,8 +62,6 @@ if(isset($_POST['clientupdate'])) {
                     'value' => $value
                 ));
         }
-        echo '<br/>'.$wpdb->last_query;
-
         }
         $result[message] = __('<span style="color:green">Client details successfully updated.</span>','appointzilla');
     }
@@ -78,7 +85,9 @@ if(isset($_POST['clientupdate'])) {
     if(isset($_GET['updateclient'])) {
         $updateclient=$_GET['updateclient'];
         $table_name = $wpdb->prefix . "ap_clients";
-        $UpdateClientDetail= $wpdb->get_row("SELECT * FROM `$table_name` WHERE `id` = '$updateclient'"); ?>
+        $UpdateClientDetail= $wpdb->get_row("SELECT * FROM `$table_name` WHERE `id` = '$updateclient'");
+        $additionalData = unserialize($UpdateClientDetail->additional_data);
+        ?>
         <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;">
             <h3><i class="fa fa-group"></i> <?php _e('Manage Client','appointzilla'); ?></h3>
         </div>
@@ -111,10 +120,27 @@ if(isset($_POST['clientupdate'])) {
                 <td><input type="text" name="client_occupation" id="client_occupation" value="<?php if($UpdateClientDetail) echo $UpdateClientDetail->occupation; ?>"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Phone Number.','appointzilla'); ?>" ><i  class="icon-question-sign"></i></a></td>
 			</tr>
 			<tr>
+                <th><?php _e('Balance','appointzilla'); ?> </th>
+                <td><strong>:</strong></td>
+                <td><input type="text" name="balance" id="balance" value="<?php if($UpdateClientDetail) echo $UpdateClientDetail->balance; ?>"/>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Balance.','appointzilla'); ?>" ><i  class="icon-question-sign"></i></a></td>
+			</tr>
+			<tr>
                 <th><?php _e('Special Note','appointzilla'); ?> </th>
                 <td><strong>:</strong></td>
                 <td><textarea type="text" name="client_desc" id="client_desc"><?php if($UpdateClientDetail) echo $UpdateClientDetail->note; ?></textarea>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Note.','appointzilla'); ?>" ><i  class="icon-question-sign"></i></a></td>
 			</tr>
+            <?php foreach($additionalData as $key=>$value):?>
+			<tr>
+                <th><?php echo $key ?> </th>
+                <td><strong>:</strong></td>
+                <td><input type="text" name="additional_data[<?php echo $key ?>]" value="<?php echo $value ?>"/></td>
+			</tr>
+            <?php endforeach;?>
+            <tr>
+                <th><input type="text" name="additional_data[new_name]" value=""/></th>
+                <td><strong>:</strong></td>
+                <td><input type="text" name="additional_data[new_value]" value=""/></td>
+            </tr>
             <tr>
 				<td></td><td></td>
 				<td>
@@ -124,7 +150,7 @@ if(isset($_POST['clientupdate'])) {
                 <?php } else { ?>
                 <button name="clientupdate" class="btn" type="submit" value="<?php if($UpdateClientDetail) echo $UpdateClientDetail->id; ?>" id="clientupdate"><i class="icon-pencil"></i> <?php _e('Update','appointzilla'); ?></button>
                 <?php } ?>
-                <a href="?page=client" class="btn"><i class="icon-remove"></i> <?php _e('Cancel','appointzilla'); ?></a>
+                <a href="?page=client" class="btn"><i class="icon-remove"></i> <?php _e('Back','appointzilla'); ?></a>
 				</td>
 			</tr>
           </table>
@@ -139,7 +165,6 @@ if(isset($_POST['clientupdate'])) {
                 WHERE  personal = 1
                 ORDER BY `group`
             ",ARRAY_A);
-            echo $wpdb->last_query;
             foreach($questionList as $key=>$singleQuestion):?>
             <?php if ($prevGroup != $singleQuestion[group]):?>
             <tr>
@@ -148,7 +173,7 @@ if(isset($_POST['clientupdate'])) {
             <?php endif;?>
             <tr>
                 <td><?php echo $singleQuestion[question];?></td>
-                <td><?php echo $singleQuestion['question_id'].'----'.$singleQuestion['value'];
+                <td><?php
                     if ($singleQuestion['type']=='date'):?>
                         <input type="text" class="datepicker date" name="question_id[<?php echo $singleQuestion['question_id'];?>]" value="<?php echo $singleQuestion['value'];?>" />
                     <?php elseif($singleQuestion['type']=='text'):?>
@@ -172,7 +197,7 @@ if(isset($_POST['clientupdate'])) {
             <?php } else { ?>
                 <button name="clientupdate" class="btn" type="submit" value="<?php if($UpdateClientDetail) echo $UpdateClientDetail->id; ?>" id="clientupdate"><i class="icon-pencil"></i> <?php _e('Update','appointzilla'); ?></button>
             <?php } ?>
-                <a href="?page=client" class="btn"><i class="icon-remove"></i> <?php _e('Cancel','appointzilla'); ?></a>
+                <a href="?page=client" class="btn"><i class="icon-remove"></i> <?php _e('Back','appointzilla'); ?></a>
 				</td>
 			</tr>
 		</table>
@@ -211,10 +236,25 @@ if(isset($_POST['clientupdate'])) {
                         <td><?php echo $ClientDetails->occupation; ?></td>
                     </tr>
                     <tr>
+						<th><?php _e('Balance','appointzilla'); ?></th><td><strong>:</strong></td>
+                        <td><?php echo $ClientDetails->balance; ?></td>
+                    </tr>
+                    <tr>
                         <th><?php _e('Special Note','appointzilla'); ?></th>
                         <td><strong>:</strong></td>
                         <td><?php echo ucfirst($ClientDetails->note); ?></td>
-                    </tr>
+                    </tr><?php
+                    $additionalData = unserialize($ClientDetails->additional_data);
+
+                    if (count($additionalData)>0 && is_array($additionalData)){
+                        foreach($additionalData as $key=>$value):?>
+                            <tr>
+                                <th><?php echo $key; ?></th>
+                                <td><strong>:</strong></td>
+                                <td><?php echo  $value; ?></td>
+                            </tr>
+                        <?php endforeach;
+                    } ?>
                     <tr>
                         <td colspan="2"></td>
                         <td><a class="btn" href="?page=client"><i class="icon-arrow-left"></i> <?php _e('Back','appointzilla'); ?></a></td>
@@ -421,36 +461,33 @@ if(isset($_POST['clientupdate'])) {
                 <div style="background:#C3D9FF; margin-bottom:10px; padding-left:10px;"> <h3> <?php _e('Client Questions','appointzilla'); ?> </h3></div>
                 <table width="100%" class="detail-view table table-striped table-condensed">
                     <?php
-					$table_question 	 = $wpdb->prefix . "ap_questionary";
-					$table_user 		 = $wpdb->prefix . "ap_clients";
-					$table_question_user = $wpdb->prefix . "ap_questionary_relationship";
-					$groupList = $wpdb->get_results("
-					SELECT $table_question.question, $table_question.type, $table_question.group,question_id, $table_question_user.value FROM $table_user
-						LEFT JOIN $table_question_user on $table_question_user.client_id = $table_user.id
-						LEFT JOIN $table_question on $table_question_user.question_id = $table_question.id
-					WHERE
-						$table_user.id = $clientid
-					order by `group`",ARRAY_A);
-					$currentGroup = '';
-					foreach($groupList as $singleQuestion):?>
-					<?php if($currentGroup!=$singleQuestion['group']):?>
-					<tr>
-						<td colspan="2" style="background:#8291FF;"><h4><?php echo $singleQuestion['group'];?></h4></td>
-					</tr>
-					<?php endif;?>
-					<tr>
-						<th width="15%"><?php echo $singleQuestion['question'];?></th>
-						<td><?php 
-							if ($singleQuestion['type']!='bit')
-								echo $singleQuestion['value'];
-							else
-								$singleQuestion['value']=='on'?_e('Yes','appointzilla'):_e('No','appointzilla');
-							?>
-						</td>
-					</tr>
-					<?php 
-					$currentGroup = $singleQuestion['group'];
-					endforeach;?>
+                    $query = $updateclient!='new'?"AND other_table_id = $clientid":"";
+                    $questionary_table = $wpdb->prefix . "ap_questionary";
+                    $questionary_rel_table = $wpdb->prefix . "ap_questionary_relationship";
+                    $questionList= $wpdb->get_results("SELECT `group`, `question` ,  `value`, `type`, $questionary_table.id as question_id FROM `$questionary_table` LEFT JOIN $questionary_rel_table as ques_rel on ques_rel.question_id = $questionary_table.id $query
+                WHERE  personal = 1
+                ORDER BY `group`
+            ",ARRAY_A);
+                    foreach($questionList as $key=>$singleQuestion):?>
+                        <?php if ($prevGroup != $singleQuestion[group]):?>
+                            <tr>
+                                <td colspan="2" style="background:#8291FF;"><h4><?php echo $singleQuestion['group'];?></h4></td>
+                            </tr>
+                        <?php endif;?>
+                        <tr>
+                            <td><?php echo $singleQuestion[question];?></td>
+                            <td><?php
+                                if ($singleQuestion['type']=='bit'){
+                                    echo $singleQuestion['value']=='on' ? __('Yes','appointzilla') : __('No','appointzilla');
+                                }
+                                elseif($singleQuestion['type']!='bit'){
+                                    echo $singleQuestion['value'];
+                                }?>
+                            </td>
+                        </tr>
+                        <?php
+                        $prevGroup = $singleQuestion[group];
+                    endforeach;?>
                 </table>
             </div>
 			<?php
@@ -593,7 +630,7 @@ if(isset($_POST['clientupdate'])) {
         $question_table = $wpdb->prefix."ap_questionary";
         if (is_numeric($_POST['questionupdate']) && isset($_POST['questionupdate'])){
 			$ExitsQuestion = $wpdb->get_row("UPDATE `$question_table` set `group` = '$group', `type` = '$type', `question` = '$question' WHERE `id` = '".$_POST['questionupdate']."'");
-			echo "<script>alert('".__('question successfully updated.','appointzilla')."')</script>";
+			echo "<script>alert('".__('Question successfully updated.','appointzilla')."')</script>";
 			echo "<script>location.href='?page=client-manage&quesionary=edit';</script>";
 		}
 		else{
@@ -614,7 +651,7 @@ if(isset($_POST['clientupdate'])) {
     <script type="text/javascript">
     jQuery(document).ready(function () {
 		$.datepicker.setDefaults( {dateFormat:"dd/mm/yy"} );
-        $( ".datepicker" ).datepicker({ changeYear: true,changeMonth: true,maxDate: "-1y",yearRange: '1930:2013'},$.datepicker.regional[ "ru" ]);
+        $( ".datepicker" ).datepicker({ changeYear: true,changeMonth: true,maxDate: "-1y",yearRange: "-90:+0",defaultDate : '01-01-1990'},$.datepicker.regional[ "ru" ]);
 		// form submit validation js
         jQuery('select[name=group]').change(function(){
 			if ($(this).val()=='new'){

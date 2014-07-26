@@ -11,6 +11,9 @@ foreach($_POST as $key=>$value){
 }
 ?>
 <script>
+
+
+    var custom_uploader;
     jQuery(document).ready(function($){
         jQuery('area').hover(function(){
             var tempInID = jQuery(this).attr('class').substring(5);
@@ -53,7 +56,7 @@ foreach($_POST as $key=>$value){
         });
 
         jQuery.datepicker.setDefaults( {dateFormat:"dd-mm-yy"} );
-        jQuery( ".datepicker" ).datepicker({ changeMonth: true},jQuery.datepicker.regional[ "ru" ]);
+        jQuery( ".datepicker" ).datepicker({ changeMonth: true,changeYear: true},jQuery.datepicker.regional[ "ru" ]);
 
         jQuery('form[name=new_row_form]').submit(function(event){
             if (jQuery('#cart_date').val()=='' || jQuery('#cart_code').val()=='' || jQuery('#cart_tooth').val()==''){
@@ -66,43 +69,51 @@ foreach($_POST as $key=>$value){
             //add stuff here
         });
 
-        var custom_uploader;
 
-
-        jQuery('#upload_image_button, #upload_image').click(function(e) {
-
-            e.preventDefault();
-
-            //If the uploader object has already been created, reopen the dialog
-            if (custom_uploader) {
-                custom_uploader.open();
-                return;
-            }
-
-            //Extend the wp.media object
-            custom_uploader = wp.media.frames.file_frame = wp.media({
-                title: 'Choose Image',
-                button: {
-                    text: 'Choose Image'
-                },
-                multiple: true
-            });
-
-            //When a file is selected, grab the URL and set it as the text field's value
-            custom_uploader.on('select', function() {
-                attachment = custom_uploader.state().get('selection').toJSON();
-                var imageIDList = '';
-                jQuery.each(attachment, function(key,singleImage){
-                    imageIDList += (imageIDList.length==0) ? singleImage.id:','+singleImage.id;
-                });
-                jQuery('#cart_images').val(imageIDList);
-            });
-
-            //Open the uploader dialog
-            custom_uploader.open();
-
-        });
     });
+
+    function MediaUploadFrame(e,imageIDList)
+    {
+        //If the uploader object has already been created, reopen the dialog
+        if (custom_uploader) {
+            custom_uploader.open();
+            return;
+        }
+
+        //Extend the wp.media object
+        custom_uploader = wp.media.frames.file_frame = wp.media({
+            title: 'Choose Image',
+            button: {
+                text: 'Choose Image'
+            },
+            selection:imageIDList,
+            multiple: true
+        });
+
+        //When a file is selected, grab the URL and set it as the text field's value
+        custom_uploader.on('select', function() {
+            attachment = custom_uploader.state().get('selection').toJSON();
+            var imageIDList = '';
+            jQuery.each(attachment, function(key,singleImage){
+                imageIDList += (imageIDList.length==0) ? singleImage.id:','+singleImage.id;
+            });
+            jQuery('#cart_images').val(imageIDList);
+        });
+        custom_uploader.on('open',function() {
+            var selection = custom_uploader.state().get('selection');
+
+            //Get ids array from
+            ids = jQuery('#cart_images').val().split(',');
+            ids.forEach(function(id) {
+                attachment = wp.media.attachment(id);
+                attachment.fetch();
+                selection.add( attachment ? [ attachment ] : [] );
+            });
+        });
+
+        //Open the uploader dialog
+        custom_uploader.open();
+    }
 
     function addNewTreatment(medicalCartID)
     {

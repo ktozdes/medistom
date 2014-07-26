@@ -226,7 +226,7 @@ FROM $treatment_table as tr
         $clientTable = $wpdb->prefix . "ap_clients";
         $medicalTable = $wpdb->prefix . "ap_medical_cart";
         $filterQuery = (isset($_POST[searchname]) && strlen($_POST[searchname])>2)?"WHERE name LIKE '%$_POST[searchname]%'":'';
-        $result[client_list] = $wpdb->get_results("SELECT * FROM  $clientTable INNER JOIN $medicalTable on $medicalTable.medical_cart_client_id = $clientTable.id
+        $result[client_list] = $wpdb->get_results("SELECT * FROM  $clientTable LEFT JOIN $medicalTable on $medicalTable.medical_cart_client_id = $clientTable.id
          GROUP BY $clientTable.id",ARRAY_A);
         $this->printer->printHtml('client_list',$result);
     }

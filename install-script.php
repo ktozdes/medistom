@@ -419,7 +419,9 @@ $ClientsTable_sql = "CREATE TABLE IF NOT EXISTS `$ClientsTableName` (
   `phone` varchar(20) NOT NULL,
   `address` varchar( 160 ) NOT NULL,
   `occupation` varchar( 160 ) NOT NULL,
-  `note` varchar( 160 ) NOT NULL 
+  `note` varchar( 160 ) NOT NULL ,
+  `balance` DECIMAL( 20, 2 ) NOT NULL,
+  `additional_data` TEXT NOT NULL
 )DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;";
 $wpdb->query($ClientsTable_sql);
 
