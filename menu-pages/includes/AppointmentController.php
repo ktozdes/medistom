@@ -335,7 +335,6 @@ class AppointmentController
 		$client_table = $wpdb->prefix ."ap_clients";
 
         $ClientTable = $wpdb->prefix."ap_clients";
-
         if (isset($_POST[clientID])){
             $ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `id` = $_POST[clientID]",ARRAY_A);
             $_POST[ClientFirstName] = $ExistClientDetails[name];
@@ -344,12 +343,12 @@ class AppointmentController
             $LastClientId = $_POST[clientID];
         }
         else{
-            $ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `email` = '".$_POST[ClientEmail]."' OR (`name` like '%".$_POST[ClientFirstName]."%'");
-            if(count($ExistClientDetails)) {
+            $ExistClientDetails = $wpdb->get_row("SELECT * FROM `$ClientTable` WHERE `phone` = '".$_POST[ClientPhone]."' AND `name` like '".$_POST[ClientFirstName]."'");
+            if(count($ExistClientDetails)>4) {
                 $LastClientId = $ExistClientDetails->id;
             } else {
                 // insert new client deatils
-                $InsertClient = "INSERT INTO `$ClientTable` (`name` ,`email` ,`phone`,address,occupation ,`note`) VALUES ('$_POST[ClientFirstName]', '$_POST[ClientEmail]', '$_POST[ClientPhone]','$_POST[ClientAddress_]', '$_POST[ClientOccupation]', '$_POST[ClientNote]', '" .serialize(array('balance'=>0)). "');";
+                $InsertClient = "INSERT INTO `$ClientTable` (`name` ,`email` ,`phone`,address,occupation ,`note`) VALUES ('$_POST[ClientFirstName]', '$_POST[ClientEmail]', '$_POST[ClientPhone]','$_POST[ClientAddress_]', '$_POST[ClientOccupation]', '$_POST[ClientNote]');";
                 if($wpdb->query($InsertClient)) {
                     $LastClientId = mysql_insert_id();
                 }

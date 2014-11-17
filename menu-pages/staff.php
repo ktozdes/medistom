@@ -3,9 +3,6 @@
     <?php global $wpdb;
     //get all group list
     global $wpdb;
-    $roles = get_option($wpdb->prefix . 'user_roles');
-
-    print_r($roles);
 
     $StaffGroupsTable = $wpdb->prefix . "ap_staff_groups";
     $StaffGoups = $wpdb->get_results("SELECT * FROM `$StaffGroupsTable`");

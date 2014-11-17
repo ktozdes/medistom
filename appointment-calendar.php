@@ -108,58 +108,46 @@ add_action('admin_menu','appointment_calendar_menu');
 
 function appointment_calendar_menu() {
     //create new top-level menu 'appointment-calendar'
-    $Menu = add_menu_page( 'Appointment Calendar', __('Appointment Calendar', 'appointzilla'), 'administrator', 'appointment-calendar', '', 'dashicons-calendar');
+    $Menu = add_menu_page( 'Appointment Calendar', __('Appointment Calendar', 'appointzilla'), 'appzilla_calendar', 'appointment-calendar', '', 'dashicons-calendar');
 
     // Calendar Page
-    $SubMenu1 = add_submenu_page( 'appointment-calendar', __('Admin Calendar', 'appointzilla'), __('Admin Calendar', 'appointzilla'), 'administrator', 'appointment-calendar', 'display_calendar_page' );
-    // Time stoat Page
-    $SubMenu2 = add_submenu_page( '', 'Manage Time Slot', '', 'administrator', 'time_sloat', 'display_time_slot_page' );
-    // Data Save Page
-    $SubMenu3 = add_submenu_page( '', 'Data Save', '', 'administrator', 'data_save', 'display_data_save_page' );
+    $SubMenu1 = add_submenu_page( 'appointment-calendar', __('Admin Calendar', 'appointzilla'), __('Admin Calendar', 'appointzilla'), 'appzilla_calendar', 'appointment-calendar', 'display_calendar_page' );
 
-    // Appointment Page
-    $SubMenu20 = add_submenu_page( 'appointment-calendar', __('Manage Appointments', 'appointzilla'), __('Manage Appointments', 'appointzilla'), 'contributor', 'manage-staff-appointments', 'display_staff_appointments_page' );
     // Service Page
-    $SubMenu4 = add_submenu_page( 'appointment-calendar', __('Services', 'appointzilla'), __('Services', 'appointzilla'), 'administrator', 'service', 'display_service_page' );
+    $SubMenu4 = add_submenu_page( 'appointment-calendar', __('Services', 'appointzilla'), __('Services', 'appointzilla'), 'appzilla_services', 'service', 'display_service_page' );
     // manage Service Page
-    $SubMenu5 = add_submenu_page( '', 'Manage Service', '', 'administrator', 'manage-service', 'display_manage_service_page' );
+    $SubMenu5 = add_submenu_page( 'appointment-calendar', 'Manage Service', '', 'appzilla_services', 'appzilla_services', 'display_manage_service_page' );
 
-    $SubMenu31 = add_submenu_page( 'appointment-calendar', __('Treatment', 'appointzilla'), __('Treatment', 'appointzilla'), 'administrator', 'treatment', 'display_treatment_page' );
+    $SubMenu31 = add_submenu_page( 'appointment-calendar', __('Treatment', 'appointzilla'), __('Treatment', 'appointzilla'), 'appzilla_treatment', 'treatment', 'display_treatment_page' );
 
-    $SubMenu32 = add_submenu_page( 'appointment-calendar', __('Diagnosis', 'appointzilla'), __('Diagnosis', 'appointzilla'), 'administrator', 'diagnosis', 'display_diagnosis_page' );
+    $SubMenu32 = add_submenu_page( 'appointment-calendar', __('Diagnosis', 'appointzilla'), __('Diagnosis', 'appointzilla'), 'appzilla_diagnosis', 'diagnosis', 'display_diagnosis_page' );
 
     // Staff Page
-    $SubMenu6 = add_submenu_page( 'appointment-calendar', 'Staffs', __('Staffs', 'appointzilla'), 'administrator', 'staff', 'display_staff_page' );
+    $SubMenu6 = add_submenu_page( 'appointment-calendar', 'Staffs', __('Staffs', 'appointzilla'), 'appzilla_staff', 'staff', 'display_staff_page' );
     // manage Staff Page
-    $SubMenu7 = add_submenu_page( '', 'Manage Staff', '', 'administrator', 'manage-staff', 'display_manage_staff_page' );
+    $SubMenu7 = add_submenu_page( 'appointment-calendar', 'Manage Staff', '', 'appzilla_staff', 'manage-staff', 'display_manage_staff_page' );
+    //cabinets
+    $SubMenu8 = add_submenu_page( 'appointment-calendar', 'Cabinets', __('Cabinets', 'appointzilla'), 'appzilla_staff', 'appzilla_cabinets', 'display_cabinet_page' );
 
-    //staff-calendar
-    $SubMenu8 = add_submenu_page( 'appointment-calendar', __('Staff Calendar', 'appointzilla'), __('Staff Calendar', 'appointzilla'), 'contributor', 'staff-appointment-calendar', 'display_staff_appointment_calendar_page' );
-
-
-    //client-calendar
-    $SubMenu22 = add_submenu_page( 'appointment-calendar', __('Appointment Calendar', 'appointzilla'), __('Appointment Calendar', 'appointzilla'), 'subscriber', 'client-appointment-calendar', 'display_client_appointment_calendar_page' );
-    $SubMenu23 = add_submenu_page( 'appointment-calendar', __('Your Appointments', 'appointzilla'), __('Your Appointments', 'appointzilla'), 'subscriber', 'manage-client-appointments', 'display_client_mange_appointments_page' );
-    $SubMenu24 = add_submenu_page( '', 'Update Appointment', '', 'subscriber', 'update-client-appointment', 'display_update_client_appointment_page' );
     // Client Page
-    $SubMenu11 = add_submenu_page( 'appointment-calendar', __('Clients', 'appointzilla'), __('Clients', 'appointzilla'), 'administrator', 'client', 'display_client_page' );
-    $SubMenu12 = add_submenu_page( '', 'Client Manage', '','administrator', 'client-manage', 'display_manage_client_page' );
-    $SubMenu25 = add_submenu_page( 'appointment-calendar', 'Medical Cart Manage', __('Medical Cart', 'appointzilla'),'administrator', 'medical_cart', 'display_medical_cart_page' );
+    $SubMenu11 = add_submenu_page( 'appointment-calendar', __('Clients', 'appointzilla'), __('Clients', 'appointzilla'), 'appzilla_client', 'client', 'display_client_page' );
+    $SubMenu12 = add_submenu_page( 'appointment-calendar', 'Client Manage', '','appzilla_client', 'client-manage', 'display_manage_client_page' );
+    $SubMenu25 = add_submenu_page( 'appointment-calendar', 'Medical Cart Manage', __('Medical Cart', 'appointzilla'),'appzilla_medical_cart', 'medical_cart', 'display_medical_cart_page' );
 
     // Manage Appointment Page
-    $SubMenu13 = add_submenu_page( 'appointment-calendar', __('Admin Appointments', 'appointzilla'), __('Appointments', 'appointzilla'), 'administrator', 'manage-appointments', 'display_manage_appointment_page' );
+    $SubMenu13 = add_submenu_page( 'appointment-calendar', __('Admin Appointments', 'appointzilla'), __('Appointments', 'appointzilla'), 'appzilla_calendar', 'manage-appointments', 'display_manage_appointment_page' );
     // Update Appointments Page
-    $SubMenu14 = add_submenu_page( '', 'Update Appointment', '', 'administrator', 'update-appointment', 'display_update_appointment_page' );
+    $SubMenu14 = add_submenu_page( 'appointment-calendar', 'Update Appointment', '', 'appzilla_appointment', 'update-appointment', 'display_update_appointment_page' );
 
 
-    $SubMenu30 = add_submenu_page('appointment-calendar', __('Report', 'appointzilla'), __('Report', 'appointzilla'), 'administrator', 'report', 'display_report_page' );
+    $SubMenu30 = add_submenu_page('appointment-calendar', __('Report', 'appointzilla'), __('Report', 'appointzilla'), 'appzilla_report', 'report', 'display_report_page' );
 
     //Export Appointments & Client List
-    $SubMenu19 = add_submenu_page('appointment-calendar', __('Export Lists', 'appointzilla'), __('Export Lists', 'appointzilla'), 'administrator', 'export-lists', 'display_export_lists_page' );
+    $SubMenu19 = add_submenu_page('appointment-calendar', __('Export Lists', 'appointzilla'), __('Export Lists', 'appointzilla'), 'appzilla_report', 'export-lists', 'display_export_lists_page' );
     // Time-Off Page
-    $SubMenu9 = add_submenu_page( 'appointment-calendar', 'Time Off', __('Time Off', 'appointzilla'), 'administrator', 'timeoff', 'display_timeoff_page' );
+    $SubMenu9 = add_submenu_page( 'appointment-calendar', 'Time Off', __('Time Off', 'appointzilla'), 'administrator', 'appzilla_holiday', 'display_timeoff_page' );
     // Update Time-Off Page
-    $SubMenu10 = add_submenu_page( '', 'Update TimeOff', '', 'administrator', 'update-timeoff', 'display_update_timeoff_page' );
+    $SubMenu10 = add_submenu_page( 'appointment-calendar', 'Update TimeOff', '', 'appzilla_holiday', 'update-timeoff', 'display_update_timeoff_page' );
 
     // Settings Page
     $SubMenu15 = add_submenu_page( 'appointment-calendar', __('Settings', 'appointzilla'), __('Settings', 'appointzilla'), 'administrator', 'app-calendar-settings', 'display_settings_page' );
@@ -167,15 +155,14 @@ function appointment_calendar_menu() {
     add_action( 'admin_print_styles-' . $Menu, 'calendar_css_js' );
     //calendar
     add_action( 'admin_print_styles-' . $SubMenu1, 'calendar_css_js' );
-    add_action( 'admin_print_styles-' . $SubMenu2, 'calendar_css_js' );
-    add_action( 'admin_print_styles-' . $SubMenu3, 'calendar_css_js' );
     //service
     add_action( 'admin_print_styles-' . $SubMenu4, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu5, 'other_pages_css_js' );
     //staff
     add_action( 'admin_print_styles-' . $SubMenu6, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu7, 'other_pages_css_js' );
-    add_action( 'admin_print_styles-' . $SubMenu8, 'calendar_css_js' );
+    //cabinet
+    add_action( 'admin_print_styles-' . $SubMenu8, 'other_pages_css_js' );
     //time-off
     add_action( 'admin_print_styles-' . $SubMenu9, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu10, 'other_pages_css_js' );
@@ -187,22 +174,6 @@ function appointment_calendar_menu() {
     add_action( 'admin_print_styles-' . $SubMenu14, 'other_pages_css_js' );
     //settings
     add_action( 'admin_print_styles-' . $SubMenu15, 'other_pages_css_js' );
-    //support n help
-    add_action( 'admin_print_styles-' . $SubMenu17, 'other_pages_css_js' );
-    //payment txn
-    //add_action( 'admin_print_styles-' . $SubMenu18, 'other_pages_css_js' );
-    //export lists
-    add_action( 'admin_print_styles-' . $SubMenu19, 'other_pages_css_js' );
-    //staff manage appointment
-    add_action( 'admin_print_styles-' . $SubMenu20, 'other_pages_css_js' );
-    //coupons codes
-    //add_action( 'admin_print_styles-' . $SubMenu21, 'other_pages_css_js' );
-    //client calendar
-    add_action( 'admin_print_styles-' . $SubMenu22, 'calendar_css_js' );
-    //client appointments
-    add_action( 'admin_print_styles-' . $SubMenu23, 'other_pages_css_js' );
-    //client update appointment
-    add_action( 'admin_print_styles-' . $SubMenu24, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu25, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu30, 'other_pages_css_js' );
     add_action( 'admin_print_styles-' . $SubMenu31, 'other_pages_css_js' );
@@ -294,16 +265,6 @@ add_action( 'wp', 'shortcode_detect' );
      require_once('menu-pages/calendar.php');
  }
 
- //time slot page
- function display_time_slot_page() {
-     require_once("menu-pages/appointment-form2.php");
- }
-
- //appointment save page
- function display_data_save_page() {
-     require_once("menu-pages/data_save.php");
- }
-
  //service page
  function display_service_page() {
      require_once("menu-pages/service.php");
@@ -328,8 +289,10 @@ add_action( 'wp', 'shortcode_detect' );
  function display_manage_staff_page() {
      require_once("menu-pages/manage-staff.php");
  }
-
-
+//cabinet page
+ function display_cabinet_page() {
+     require_once("menu-pages/cabinet.php");
+ }
  
  //time-off page
  function display_timeoff_page() {
@@ -338,10 +301,6 @@ add_action( 'wp', 'shortcode_detect' );
  //update-time-off page
  function display_update_timeoff_page() {
      require_once("menu-pages/update-timeoff.php");
- }
- 
- function display_staff_profile_page() {
-     require_once("menu-pages/staff-profile.php");
  }
  
  //client page
@@ -374,10 +333,6 @@ function display_export_lists_page() {
     require_once("menu-pages/export-lists.php");
 }
 
-//coupons codes page
-function display_coupons_codes_page() {
-    require_once("menu-pages/coupons-codes.php");
-}
 function display_report_page() {
     require_once("menu-pages/report.php");
 }
@@ -396,28 +351,6 @@ function display_report_page() {
  function display_support_n_help_page() {
      require_once("menu-pages/supportnhelp.php");
  }
-
- //staff calendar page
- function display_staff_appointment_calendar_page() {
-     require_once("menu-pages/staff-appointment-calendar.php");
- }
-//staff appointments page
-function display_staff_appointments_page() {
-    require_once("menu-pages/manage-staff-appointments.php");
-}
-
-//client calendar page
-function display_client_appointment_calendar_page() {
-    require_once("menu-pages/client-appointment-calendar.php");
-}
-//client appointments page
-function display_client_mange_appointments_page() {
-    require_once("menu-pages/manage-client-appointments.php");
-}
-//client update appointment page
-function display_update_client_appointment_page() {
-    require_once("menu-pages/update-client-appointments.php");
-}
 
 // Including Calendar Short-Code Page
 require_once("appointment-calendar-shortcode.php");
@@ -483,6 +416,7 @@ function include_classes()
     include_once($pluginDIR.'/menu-pages/includes/AppointmentController.php');
     include_once($pluginDIR.'/menu-pages/includes/TreatmentController.php');
     include_once($pluginDIR.'/menu-pages/includes/DiagnosisController.php');
+    include_once($pluginDIR.'/menu-pages/includes/CabinetController.php');
     include_once($pluginDIR.'/menu-pages/includes/MedicalCartController.php');
     include_once($pluginDIR.'/menu-pages/includes/PrintView.php');
     include_once($pluginDIR.'/menu-pages/includes/ReportController.php');

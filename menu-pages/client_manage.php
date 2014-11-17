@@ -129,13 +129,16 @@ if(isset($_POST['clientupdate'])) {
                 <td><strong>:</strong></td>
                 <td><textarea type="text" name="client_desc" id="client_desc"><?php if($UpdateClientDetail) echo $UpdateClientDetail->note; ?></textarea>&nbsp;<a href="#" rel="tooltip" title="<?php _e('Client Note.','appointzilla'); ?>" ><i  class="icon-question-sign"></i></a></td>
 			</tr>
-            <?php foreach($additionalData as $key=>$value):?>
+            <?php 
+			if (is_array($additionalData)):
+			foreach($additionalData as $key=>$value):?>
 			<tr>
                 <th><?php echo $key ?> </th>
                 <td><strong>:</strong></td>
                 <td><input type="text" name="additional_data[<?php echo $key ?>]" value="<?php echo $value ?>"/></td>
 			</tr>
-            <?php endforeach;?>
+            <?php endforeach;
+			endif;?>
             <tr>
                 <th><input type="text" name="additional_data[new_name]" value=""/></th>
                 <td><strong>:</strong></td>
@@ -629,7 +632,7 @@ if(isset($_POST['clientupdate'])) {
         $type = $_POST['type'];
         $question_table = $wpdb->prefix."ap_questionary";
         if (is_numeric($_POST['questionupdate']) && isset($_POST['questionupdate'])){
-			$ExitsQuestion = $wpdb->get_row("UPDATE `$question_table` set `group` = '$group', `type` = '$type', `question` = '$question' WHERE `id` = '".$_POST['questionupdate']."'");
+			$ExitsQuestion = $wpdb->get_row("UPDATE `$question_table` set `group` = '$group', `type` = '$type', `question` = '$question', personal='$personal' WHERE `id` = '".$_POST['questionupdate']."'");
 			echo "<script>alert('".__('Question successfully updated.','appointzilla')."')</script>";
 			echo "<script>location.href='?page=client-manage&quesionary=edit';</script>";
 		}
@@ -660,7 +663,8 @@ if(isset($_POST['clientupdate'])) {
 			}
 		});
 		jQuery('form').submit(function() {
-			if ($('#questioncreate').length<=0){
+			if ($('#clientcreate').length>0){
+				alert('aaaa');
 				jQuery('.error').hide();
 				var client_name = jQuery("input#client_name").val();
 				if (client_name== "") {

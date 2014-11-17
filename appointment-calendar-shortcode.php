@@ -62,12 +62,10 @@ function appointment_calendar_shortcode() {
         $filterQuery = "AND cabinet_id = $_POST[bycabinet]";
         $filterCabinetID = $_POST[bycabinet];
     }
-    $FetchAllApps_sql = "select $client_table.`name` as name, $staff_table.`name` as staff_name, `start_time`, `end_time`, `date` FROM `$AppointmentTableName`
+    $FetchAllApps_sql = "select $client_table.`name` as name, $staff_table.`name` as staff_name, `start_time`, `end_time`,cabinet_id, `date` FROM `$AppointmentTableName`
         INNER JOIN $client_table on $client_table.id = $AppointmentTableName.client_id
         INNER JOIN $staff_table on $staff_table.id = $AppointmentTableName.staff_id
     WHERE (`recurring` = 'no' OR recurring='') $filterQuery AND `date` >= '$current_month_first_date' AND `status` != 'cancelled'";
-    //fetch all recurring appointments
-    $FetchAllRApps_sql = "select * FROM `$AppointmentTableName` WHERE `recurring` = 'yes' AND `date` >= '$current_month_first_date' AND `recurring_st_date` >= '$laod_recurring_from' AND `status` != 'cancelled'";
 
     //fetch all normal events
     $FetchAllEvent_sql = "select `name`, `start_time`, `end_time`, `start_date`, `end_date`, `repeat` FROM `$EventTableName` where `repeat` = 'N' AND `start_date` >= '$current_month_first_date' ";
@@ -75,9 +73,9 @@ function appointment_calendar_shortcode() {
     //fetch all recurring events
     $FetchAllREvent_sql = "select `name`, `start_time`, `end_time`, `start_date`, `end_date`, `repeat` FROM `$EventTableName` where `repeat` != 'N' AND `start_date` >= '$laod_recurring_from' ";
 
-    if($DateFormat == 'd-m-Y') $CalFormat = 'dd';
-    if($DateFormat == 'm-d-Y') $CalFormat = 'dd';
-    if($DateFormat == 'Y-m-d') $CalFormat = 'dd'; //coz yy-mm-dd not parsing in a correct date
+    if($DateFormat == 'd-m-Y') $DPFormat = 'dd-mm-yy';
+    if($DateFormat == 'm-d-Y') $DPFormat = 'mm-dd-yy';
+    if($DateFormat == 'Y-m-d') $DPFormat = 'yy-mm-dd';
 
     //Set Colors: Get Business Hours and open & close days
     $BusinessHoursTable = $wpdb->prefix . "ap_business_hours";
@@ -156,6 +154,10 @@ function appointment_calendar_shortcode() {
 
     <script type='text/javascript'>
     var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+    var start = '';
+    var end = '';
+    var dayOfWeek = '';
+    var cabinetID = '';
     jQuery(document).ready(function() {
         jQuery('#calendar').fullCalendar({
             header: {
@@ -163,13 +165,11 @@ function appointment_calendar_shortcode() {
                 center: 'title',
                 right: 'month,agendaWeek,agendaDay'
             },
-            editable: false,
-            weekends: true,
+            defaultView: 'resourceDay',
             timeFormat: <?php if($TimeFormat == 'h:i') echo "'h:mmtt{-h:mmtt }'"; else echo "'H:mm{-H:mm }'"; ?>,
             axisFormat: <?php if($TimeFormat == 'h:i') echo "'hh:mm'"; else echo "'HH:mm'"; ?>,
             firstDay: <?php echo $CalStartDay;  ?>,
-            slotMinutes: <?php if($AllCalendarSettings['calendar_slot_time'] != '') echo $AllCalendarSettings['calendar_slot_time']; else echo "15"; ?>,
-            defaultView: '<?php if($AllCalendarSettings['calendar_view'] != '') echo $AllCalendarSettings['calendar_view']; else echo "month"; ?>',
+            //slotMinutes: <?php if($AllCalendarSettings['calendar_slot_time'] != '') echo $AllCalendarSettings['calendar_slot_time']; else echo "15"; ?>,
             minTime: <?php if($AllCalendarSettings['day_start_time'] != '') echo date("G", strtotime($AllCalendarSettings['day_start_time'])); else echo "8"; ?>,
             maxTime: <?php  if($AllCalendarSettings['day_end_time'] != '') echo date("G", strtotime($AllCalendarSettings['day_end_time'])); else echo "20"; ?>,
             monthNames: ["<?php _e("January", "appointzilla"); ?>","<?php _e("February", "appointzilla"); ?>","<?php _e("March", "appointzilla"); ?>","<?php _e("April", "appointzilla"); ?>","<?php _e("May", "appointzilla"); ?>","<?php _e("June", "appointzilla"); ?>","<?php _e("July", "appointzilla"); ?>", "<?php _e("August", "appointzilla"); ?>", "<?php _e("September", "appointzilla"); ?>", "<?php _e("October", "appointzilla"); ?>", "<?php _e("November", "appointzilla"); ?>", "<?php _e("December", "appointzilla"); ?>" ],
@@ -181,58 +181,66 @@ function appointment_calendar_shortcode() {
                 day: "<?php _e("Day", "appointzilla"); ?>",
                 week:"<?php _e("Week", "appointzilla"); ?>",
                 month:"<?php _e("Month", "appointzilla"); ?>"
-            }, <?php
-            if($DateFormat == 'd-m-Y') $DPFormat = 'dd-mm-yy';
-            if($DateFormat == 'm-d-Y') $DPFormat = 'mm-dd-yy';
-            if($DateFormat == 'Y-m-d') $DPFormat = 'yy-mm-dd'; //coz yy-mm-dd not parsing in a correct date ?>
+            },
             selectable: true,
-            selectHelper: false,
-            select: function(start, end, allDay) {
-
-                    var appdate = jQuery.datepicker.formatDate('<?php echo $DPFormat; ?>', new Date(start));
-                    var appdate2 = jQuery.datepicker.formatDate('dd-mm-yy', new Date(start));
-                    var check = jQuery.fullCalendar.formatDate(start,'yyyy-MM-dd');
-                    var today = jQuery.fullCalendar.formatDate(new Date(),'yyyy-MM-dd');
-                    if(check < today) {
-                        // Its a past date
-                        alert("<?php _e("Sorry! Appointment cannot be booked for past dates.", "appointzilla"); ?>");
-                    } else {
-                        // Its a right date
-                        jQuery('#appdate').val(appdate);
-                        jQuery('#appdate2').val(appdate2);
-                        jQuery('#AppFirstModal').show();
-                        jQuery("#datepicker").datepicker("setDate", appdate);
-                        var dayOfWeek = jQuery('#datepicker').datepicker('getDate').getUTCDay();
-                        jQuery('#loading-staff').show();
-                        jQuery.ajax({
-                            dataType : 'html',
-                            type: 'GET',
-                            url : location.href,
-                            cache: false,
-                            data : 'selectedDate='+appdate+'&dayOfWeek='+dayOfWeek,
-                            complete : function() {  },
-                            success: function(data) {
-                                jQuery('#loading-staff').hide();
-                                data = jQuery(data).find('div#tempStaffList');
-                                jQuery('#stfflistdiv').html(data);
-                                jQuery('#stafflist').bind('change',function() { staffChanged() });
-                            }
-                        });
-                        // date-picker tweaks
-                        var i;
-                        var startdate = jQuery.datepicker.formatDate('yymm', new Date(start));
-                        for(i=1; i<=31; i++) {
-                            if(i < 10) i = '0' + i;
-                            var nextdate = startdate + i;
-                            jQuery('#date1_frame').contents().find('#' + nextdate).removeClass('today select');
+            selectHelper: true,
+            select: function(tempStart, tempEnd, allDay, event, resourceId) {
+                var appdate = jQuery.datepicker.formatDate('<?php echo $DPFormat; ?>', new Date(tempStart));
+                var appdate2 = jQuery.datepicker.formatDate('dd-mm-yy', new Date(tempStart));
+                var check = jQuery.fullCalendar.formatDate(tempStart,'yyyy-MM-dd');
+                var today = jQuery.fullCalendar.formatDate(new Date(),'yyyy-MM-dd');
+                if(check < today) {
+                    alert("<?php _e("Sorry! Appointment cannot be booked for past dates.", "appointzilla"); ?>");
+                } else {
+                    // Its a right date
+                    start = tempStart;
+                    end = tempEnd;
+                    dayOfWeek = jQuery('#datepicker').datepicker('getDate').getUTCDay();
+                    cabinetID = resourceId;
+                    jQuery('#appdate').val(appdate);
+                    jQuery('#appdate2').val(appdate2);
+                    jQuery('#AppFirstModal').show();
+                    jQuery("#datepicker").datepicker("setDate", appdate);
+                    jQuery('#loading-staff').show();
+                    jQuery.ajax({
+                        dataType : 'html',
+                        type: 'GET',
+                        url : location.href,
+                        cache: false,
+                        data : 'selectedDate='+appdate+'&dayOfWeek='+dayOfWeek+'&cabinet_id='+resourceId+'&start_time='+start+'&end_time='+end,
+                        complete : function() {  },
+                        success: function(data) {
+                            jQuery('#loading-staff').hide();
+                            data = jQuery(data).find('div#tempStaffList');
+                            jQuery('#stfflistdiv').html(data);
+                            jQuery('#stafflist').bind('change',function() { staffChanged() });
+                            jQuery("#bycabinet").val(resourceId);
                         }
-                        var todaydate = jQuery.datepicker.formatDate('yymmdd', new Date());
-                        jQuery('#date1_frame').contents().find('#' + todaydate).removeClass('select');
-                        var cnvtdate = jQuery.datepicker.formatDate('yymmdd', new Date(start));
-                        jQuery('#date1_frame').contents().find('#' + cnvtdate).addClass('today select');
+                    });
+                    // date-picker tweaks
+                    var i;
+                    var startdate = jQuery.datepicker.formatDate('yymm', new Date(start));
+                    for(i=1; i<=31; i++) {
+                        if(i < 10) i = '0' + i;
+                        var nextdate = startdate + i;
+                        jQuery('#date1_frame').contents().find('#' + nextdate).removeClass('today select');
                     }
+                    var todaydate = jQuery.datepicker.formatDate('yymmdd', new Date());
+                    jQuery('#date1_frame').contents().find('#' + todaydate).removeClass('select');
+                    var cnvtdate = jQuery.datepicker.formatDate('yymmdd', new Date(start));
+                    jQuery('#date1_frame').contents().find('#' + cnvtdate).addClass('today select');
+                }
                 },
-
+                resources: [
+                    <?php
+                    $cabinet_table = $wpdb->prefix . "ap_cabinets";
+                    $cabinetList = $wpdb->get_results("SELECT * FROM $cabinet_table",ARRAY_A);
+                    foreach($cabinetList as $singleCabinet):?>
+                    {
+                        name: '<?php echo $singleCabinet[cabinet_name]?>',
+                        id:	'<?php echo $singleCabinet[cabinet_id]?>'
+                    },<?php endforeach;?>
+                ],
             events: [
             <?php //Loading Normal Appointments On Calendar Start
                 $AllAppointments = $wpdb->get_results($FetchAllApps_sql, OBJECT);
@@ -249,6 +257,7 @@ function appointment_calendar_shortcode() {
                         $date = "$y-$m-$d";
                         $date = str_replace("-",", ", $date); ?>
                         {
+                            resourceId: '<?php echo $single->cabinet_id;?>',
                             title: "<?php echo $single->name; ?>",
                             start: new Date(<?php echo "$date, $start"; ?>),
                             end: new Date(<?php echo "$date, $end"; ?>),
@@ -259,83 +268,6 @@ function appointment_calendar_shortcode() {
                     }
                 }
                 //Loading Appointments On Calendar End
-
-                //Loading Recurring Appointments On Calendar Start
-                $AllRecurringAppointments = $wpdb->get_results($FetchAllRApps_sql, OBJECT);
-                if($AllRecurringAppointments) {
-                    foreach($AllRecurringAppointments as $single) {
-                        if($single->recurring_type != 'monthly') {
-                            $start_time = date("H, i", strtotime($single->start_time));
-                            $end_time= date("H, i", strtotime($single->end_time));
-                            $start_date = $single->recurring_st_date;
-                            $end_date =  $single->recurring_ed_date;
-
-                            //if appointment type then calculate RTC(recutting date calulation)
-                            if($single->recurring_type == 'PD')
-                            $RDC = 1;
-                            if($single->recurring_type == 'daily')
-                            $RDC = 1;
-                            if($single->recurring_type == 'weekly')
-                            $RDC = 7;
-
-                            //calculate all dates
-                            $Alldates = array();
-                            $st_dateTS = strtotime($start_date);
-                            $ed_dateTS = strtotime($end_date);
-                            for ($currentDateTS = $st_dateTS; $currentDateTS <= $ed_dateTS; $currentDateTS += (60 * 60 * 24 * $RDC)) {
-                                $currentDateStr = date("Y-m-d",$currentDateTS);
-                                $AlldatesArr[] = $currentDateStr;
-
-                                // subtract 1 from month digit coz calendar work on month 0-11
-                                $y = date ( 'Y' , strtotime( $currentDateStr ) );
-                                $m = date ( 'n' , strtotime( $currentDateStr ) ) - 1;
-                                $d = date ( 'd' , strtotime( $currentDateStr ) );
-                                $eachdate = "$y-$m-$d";
-
-                                //change format
-                                $eachdate = str_replace("-",", ", $eachdate); ?>
-                                {
-                                    title: "<?php _e('Booked', 'appointzilla'); ?>",
-                                    start: new Date(<?php echo "$eachdate, $start_time"; ?>),
-                                    end: new Date(<?php echo "$eachdate, $end_time"; ?>),
-                                    allDay: false,
-                                    backgroundColor : "<?php if($single->staff_id =='1') echo "#DD75DD"; else echo "#6A6AFF"; ?>",
-                                    textColor: ""
-                                }, <?php
-                            }// end of date calculation for
-                        } else {
-                            $start_time = date("H, i", strtotime($single->start_time));
-                            $end_time= date("H, i", strtotime($single->end_time));
-
-                            $start_date = $single->recurring_st_date;
-                            $end_date =  $single->recurring_ed_date;
-
-                            $i = 0;
-                            do {
-                                    $NextDate = date("Y-m-d", strtotime("+$i months", strtotime($start_date)));
-                                    // subtract 1 from $startdate month digit coz calendar work on month 0-11
-                                    $y = date ( 'Y' , strtotime( $NextDate ) );
-                                    $m = date ( 'n' , strtotime( $NextDate ) ) - 1;
-                                    $d = date ( 'd' , strtotime( $NextDate ) );
-                                    $start_date2 = "$y-$m-$d";
-                                    $start_date2 = str_replace("-",", ", $start_date2);     //changing date format
-                                    $end_date2 = str_replace("-",", ", $start_date2); ?>
-                                    {
-                                        title: "<?php _e('Booked', 'appointzilla'); ?>",
-                                        start: new Date(<?php echo "$start_date2, $start_time"; ?>),
-                                        end: new Date(<?php echo "$end_date2, $end_time"; ?>),
-                                        allDay: false,
-                                        backgroundColor : "<?php if($single->staff_id =='1') echo "#DD75DD"; else echo "#6A6AFF"; ?>",
-                                        textColor: ""
-                                    }, <?php
-                                    $i = $i+1;
-                                } while(strtotime($end_date) != strtotime($NextDate));
-                        }// end of else
-
-                    } // end of fetching single appointment foreach
-                } // end of if
-                //Loading Recurring Appointments On Calendar End
-
 
                 //Loading Events On Calendar Start
                 $AllEvents = $wpdb->get_results($FetchAllEvent_sql, OBJECT);
@@ -458,9 +390,8 @@ function appointment_calendar_shortcode() {
                 }// end of if check
                 //Loading Recurring Events On Calendar End
                 ?>
-                {
-                }
-                ]
+            {}
+            ]
         });
 
         jQuery("#datepicker").datepicker({
@@ -526,10 +457,27 @@ function appointment_calendar_shortcode() {
             jQuery('#AppSecondModal').hide();
         });
         jQuery('#bycabinet').change(function(){
-            jQuery('#ajax-loading-container').show();
-            jQuery('#filter_form').submit();
+            cabinetID = jQuery(this).val();
+            var appdate= jQuery('#appdate').val();
+            jQuery('.secondModal_button').hide();
+            jQuery('#stfflistdiv').hide();
+            jQuery('#loading-staff').show();
+            jQuery.ajax({
+                dataType : 'html',
+                type: 'GET',
+                url : location.href,
+                cache: false,
+                data : 'selectedDate='+appdate+'&dayOfWeek='+dayOfWeek+'&cabinet_id='+cabinetID+'&start_time='+start+'&end_time='+end,
+                complete : function() {  },
+                success: function(data) {
+                    data = jQuery(data).find('div#tempStaffList');
+                    jQuery('#stfflistdiv').html(data);
+                    jQuery('#loading-staff').hide();
+                    jQuery('#stfflistdiv').show();
+                    jQuery('#stafflist').bind('change',function() { staffChanged() });
+                }
+            });
         });
-
     });
 
    jQuery.datepicker.formatDate("<?php echo $DPFormat; ?>", new Date());
@@ -537,12 +485,10 @@ function appointment_calendar_shortcode() {
     function LoadSecondModal() {
         var AppDate = jQuery('#appdate').val();
         var StaffId = jQuery('#stafflist').val();
-        var CabinetId = jQuery('#cabinetlist').val();
-        var SecondData = "AppDate=" + AppDate + "&StaffId=" + StaffId+"&CabinetID=" + CabinetId;
+
+        var SecondData = "AppDate=" + AppDate + "&StaffId=" + StaffId+"&CabinetID=" + cabinetID+'&start_time='+start+'&end_time='+end;
         jQuery('#loading1').show(); // loading button onclick next1 at first modal
         jQuery('#next1').hide();    //hide next button
-        jQuery('#stfflistdiv').html('');
-        jQuery('#cabinet').html('');
         jQuery.ajax({
             dataType : 'html',
             type: 'GET',
@@ -565,8 +511,6 @@ function appointment_calendar_shortcode() {
         jQuery('#AppSecondModal').hide()
         jQuery('#AppFirstModal').show();
         jQuery('#next1').show();
-        jQuery('#stfflistdiv').html('');
-        jQuery('#cabinet').html('');
     }
 
     //load second modal on back2 click
@@ -664,7 +608,7 @@ function appointment_calendar_shortcode() {
            }
            //client phone
            if (ClientPhone == "") {
-               jQuery(".client-phone").after("<span class='error'>&nbsp;<br><strong><?php _e("Phone required", "appointzilla"); ?></strong></span>");
+               jQuery(".client-phone").after("<span class='error'>&nbsp;<br><strong><?php _e("Phone required.", "appointzilla"); ?></strong></span>");
                return false;
            }
            var data = {
@@ -898,40 +842,9 @@ function appointment_calendar_shortcode() {
 
     function staffChanged()
     {
-        var StaffId = jQuery("select#stafflist").val();
-        if(StaffId > 0) {
-            jQuery('#loading-staff').show();
-            jQuery('#cabinet').hide();
-            jQuery.ajax({
-                dataType : 'html',
-                type: 'GET',
-                url : location.href,
-                data : "StaffId=" + StaffId,
-                complete : function() { },
-                success: function(data) {
-                    data=jQuery(data).find('div#cabinetlistdiv');
-                    jQuery('#cabinet').show();
-                    jQuery('#loading-staff').hide();
-                    jQuery('#cabinet').html(data);
-                    jQuery('#cabinetlist').bind('change',function() { cabinetChanged() });
-                }
-            });
-        } else {
-            jQuery('#cabinet').hide();
-        }
-    }
-
-    function cabinetChanged()
-    {
-        var cabinetlist = jQuery("select#cabinetlist").val();
-        if(cabinetlist > 0) {
-            jQuery('.secondModal_button').show();
-        }
+        jQuery('.secondModal_button').show();
     }
     </script>
-    <div id="ajax-loading-container">
-        <img src="<?php echo plugins_url('/appointment-calendar-premium/menu-pages/images/big-loading.gif');?>"/>
-    </div>
     <!---Display Booking Instruction--->
     <?php if($AllCalendarSettings['apcal_booking_instructions']) { ?>
     <div id="bookinginstructions" align="center">
@@ -940,30 +853,6 @@ function appointment_calendar_shortcode() {
     <?php } ?>
 
     <!---Schedule An Appointment Button--->
-    <div id="bkbtndiv" align="center" style="padding:10px;">
-        <button name="addappointment" class="apcal_btn apcal_btn-large apcal_btn-primary" type="submit" id="addappointment">
-            <strong><i class="icon-calendar icon-white"></i> <?php if(isset($AllCalendarSettings['booking_button_text'])) {
-                    echo $AllCalendarSettings['booking_button_text'];
-                } else {
-                    _e("Schedule New Appointment", 'appointzilla');
-                } ?>
-            </strong>
-        </button>
-    </div>
-    <form method="post" id="filter_form">
-        <select name="bycabinet" id="bycabinet">
-            <option value=""><?php _e('All Cabinets', 'appointzilla'); ?></option>
-            <?php
-            global $wpdb;
-            $CabinetTableName = $wpdb->prefix . "ap_cabinets";
-            $AllCabinet = $wpdb->get_results("SELECT * FROM `$CabinetTableName`", ARRAY_A);
-            if($AllCabinet) {
-                foreach($AllCabinet as $singleCabinet) { ?>
-                <option value="<?php echo $singleCabinet[cabinet_id]; ?>" <?php if($filterCabinetID == $singleCabinet[cabinet_id]) echo "selected"; ?>>&nbsp;&nbsp;<?php echo ucwords($singleCabinet[cabinet_name]); ?></option><?php
-                }
-            } ?>
-        </select>
-    </form>
 
     <div id='messagebox'>
     </div>
@@ -977,7 +866,7 @@ function appointment_calendar_shortcode() {
             <form action="" method="post" name="addnewappointment" id="addnewappointment">
                 <div class="apcal_modal-info">
                     <div class="apcal_alert apcal_alert-info">
-                        <a href="#" style="float:right; margin-right:4px; margin-top:12px;" id="close"><i class="icon-remove"></i></a>
+                        <a href="javascript:void(0)" style="float:right; margin-right:4px; margin-top:12px;" id="close"><i class="icon-remove"></i></a>
                         <p><strong><?php _e('Schedule New Appointment', 'appointzilla'); ?></strong></p>
                         <div><?php _e('Step 1. Select Date & Staff', 'appointzilla'); ?></div>
                     </div>
@@ -996,13 +885,25 @@ function appointment_calendar_shortcode() {
                         </div>
                         <br>
                         <div id="loading-staff" style="display:none;"><?php _e('Loading...', 'appointzilla'); ?><img src="<?php echo plugins_url('images/loading.gif', __FILE__); ?>" /></div>
-					<div id="cabinet"></div>
+					<div id="cabinet">
+                        <select name="bycabinet" id="bycabinet">
+                            <option value=""><?php _e('All Cabinets', 'appointzilla'); ?></option>
+                            <?php
+                            global $wpdb;
+                            $CabinetTableName = $wpdb->prefix . "ap_cabinets";
+                            $AllCabinet = $wpdb->get_results("SELECT * FROM `$CabinetTableName`", ARRAY_A);
+                            foreach($AllCabinet as $singleCabinet) { ?>
+                                <option value="<?php echo $singleCabinet[cabinet_id]; ?>">&nbsp;&nbsp;<?php echo ucwords($singleCabinet[cabinet_name]); ?></option><?php
+                            } ?>
+                        </select>
+					</div>
+                    <br>
+                    <button type="button" class="apcal_btn secondModal_button" id="next1" style="display: none;" name="next1" onclick="LoadSecondModal()"><?php _e('Next', 'appointzilla'); ?> <i class="icon-arrow-right"></i></button>
                     </div><!--#secdiv-->
                 </div><!--#modal-body-->
             </form>
       </div>
     </div>
-    <!---AppSecondModal For Schedule New Appointment--->
 
     <!---AppSecondModal For Schedule New Appointment--->
     <div id="AppSecondModal" style="display:none;"></div>
@@ -1019,10 +920,14 @@ function appointment_calendar_shortcode() {
 
     <?php if (isset($_GET[selectedDate])){?>
         <div id="tempStaffList">
-        <?php $StaffTable = $wpdb->prefix . "ap_staff";
+        <?php
+        $StaffTable = $wpdb->prefix . "ap_staff";
+        $CabinetTable = $wpdb->prefix . "ap_cabinets_staff";
         $ReturnStaffList = array();
         $dayOfWeek = array('monday', 'tuesday',  'wednesday','thursday', 'friday', 'saturday', 'sunday');
-        $StaffList = $wpdb->get_results("SELECT * FROM `$StaffTable`", ARRAY_A);
+        $StaffList = $wpdb->get_results("SELECT $StaffTable.id,$StaffTable.name,$StaffTable.staff_hours FROM `$StaffTable`
+        INNER JOIN $CabinetTable on $CabinetTable.staff_id = $StaffTable.id
+        WHERE $CabinetTable.cabinet_id = $_GET[cabinet_id]", ARRAY_A);
         foreach($StaffList as $singleStuff) {
             $singleStuff[staff_hours] = unserialize($singleStuff[staff_hours]);
             if (isset($singleStuff[staff_hours][$dayOfWeek[$_GET['dayOfWeek']].'_close'])!==false && $singleStuff[staff_hours][$dayOfWeek[$_GET['dayOfWeek']].'_close']=='no' && $AppointZilla->isCurrentDateActive($singleStuff[id],$_GET[selectedDate])==true){
@@ -1043,42 +948,6 @@ function appointment_calendar_shortcode() {
             </select>
         </div>
         <?php
-    }
-    else if(isset($_GET['StaffId']) && !isset($_GET[AppDate])) { ?>
-        <!---Loading staff ajax return code--->
-        <div id="cabinetlistdiv">
-        <?php
-        $StaffID = $_GET['StaffId'];
-        if($StaffID>0) { ?>
-            <strong><?php _e('Select Cabinet:', 'appointzilla'); ?></strong><br>
-            <select name='cabinetlist' id='cabinetlist' style="width:100%">
-            <?php //get all staff id list by service id
-
-                $CabinetTable = $wpdb->prefix . "ap_cabinets";
-                $AllCabinetList = $wpdb->get_results("SELECT `ms_ap_cabinets`.cabinet_id, cabinet_name FROM `$CabinetTable`
-LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_staff.cabinet_id
- WHERE  ms_ap_cabinets_staff.staff_id = '$StaffID'", ARRAY_A);
-                if(count($AllCabinetList)>0) {
-                    echo "<option value=''>".__("Select Cabinet")."</option>";
-                    foreach($AllCabinetList as $single_cabinet) {
-                        echo "<option value='".$single_cabinet[cabinet_id]."'>&nbsp;&nbsp;".ucwords($single_cabinet[cabinet_name])."</option>";
-                    }
-                } else {
-                    echo "<option value='1'>".__("No Staff Assigned")."</option>";
-                }
-            ?>
-            </select>
-            <br/>
-            <button type="button" class="apcal_btn secondModal_button" id="next1" style="display: none;" name="next1" onclick="LoadSecondModal()"><?php _e('Next', 'appointzilla'); ?> <i class="icon-arrow-right"></i></button>
-           </div>
-            <?php }
-        else{?>
-            <strong><?php _e('No Staff Assigned:', 'appointzilla'); ?></strong>
-        <?php }?>
-        <br>
-        <button type="button" class="apcal_btn secondModal_button" id="next1" style="display: none;" name="next1" onclick="LoadSecondModal()"><?php _e('Next', 'appointzilla'); ?> <i class="icon-arrow-right"></i></button>
-        <div id="loading1" style="display:none;"><?php _e('Loading...', 'appointzilla'); ?><img src="<?php echo plugins_url("images/loading.gif", __FILE__); ?>" />
-    <?php
     }
 
     else if( isset($_GET['AppDate']) && isset($_GET['StaffId']) && !isset($_GET['StartTime'])) {?>
@@ -1269,6 +1138,7 @@ LEFT JOIN ms_ap_cabinets_staff on `ms_ap_cabinets`.cabinet_id = ms_ap_cabinets_s
 		<div id="AppForthModalData">
 		<div class="apcal_modal" id="AppForthModal" style="z-index:10000;">
 			<div class="apcal_modal-info">
+                <a href="javascript:void(0)" onclick="CloseModelform()" style="float:right; margin-right:40px; margin-top:21px;" id="close"><i class="icon-remove"></i></a>
 		<?php
             $AppointmentController = new AppointmentController();
 			$_POST['ClientFirstName'] = sanitize_text_field($_POST['ClientFirstName']).' '.sanitize_text_field($_POST['ClientLastName']);
@@ -1348,6 +1218,7 @@ WHERE app.id =$newAppointmentID ",ARRAY_A);?>
 			else:?>
 			<div class="apcal_alert apcal_alert-info">
 				<p><?php _e('Sorry. Your appointment has not been scheduled.', 'appointzilla'); ?></p>
+                <button type="button" onclick="return TryAgainBooking();" class="apcal_btn apcal_btn-danger"><i class="fa fa-mail-reply"></i> <?php  _e("Try Again","appointzilla"); ?></button>
 			</div>
             <?php endif;?>
 			</div>
@@ -1498,7 +1369,7 @@ WHERE app.id =$newAppointmentID ",ARRAY_A);?>
         <div class="apcal_modal" id="AppForthModal" style="z-index:10000;">
             <div class="apcal_modal-info" style="padding-bottom:20px;">
                 <div style="float:right; margin-top:5px; margin-right:10px;">
-                    <a href="#" onclick="CloseModelformfailed()" id="close" ><i class="icon-remove"></i></a>
+                    <a href="javascript:void(0)" onclick="CloseModelformfailed()" id="close" ><i class="icon-remove"></i></a>
                 </div>
                 <input type="hidden" name="appid" id="appid" value="<?php echo $_GET['appointId']; ?>" />
                 <div class="apcal_alert apcal_alert-info">
@@ -1613,7 +1484,7 @@ WHERE app.id =$newAppointmentID ",ARRAY_A);?>
 				<tr>
 					<td colspan="3">
 						<?php  _e("Sorry! No record found.","appointzilla"); ?>
-						<button type="button" onclick="return TryAgainBooking();" class="apcal_btn apcal_btn-danger"><i class="fa fa-mail-reply"></i> Try Again</button>
+						<button type="button" onclick="return TryAgainBooking();" class="apcal_btn apcal_btn-danger"><i class="fa fa-mail-reply"></i> <?php  _e("Try Again","appointzilla"); ?></button>
 					</td>
 				</tr>
             <?php
